@@ -223,20 +223,54 @@ resource "google_compute_url_map" "url_map" {
   default_service = google_compute_backend_service.backend_service.id
 }
 
+# --- Networking and SSL for HTTPS --- 
+
+resource "google_compute_global_address" "static_ip" {
+  provider = google-beta
+  name = "hello-world-static-ip"
+}
+
+resource "google_compute_managed_ssl_certificate" "ssl_certificate" {
+  provider = google-beta
+  name = "hello-world-ssl-cert"
+  managed {
+    domains = ["mouthmetrics.32studio.org"]
+  }
+}
+
+resource "google_compute_target_https_proxy" "https_proxy" {
+  provider = google-beta
+  name    = "hello-world-https-proxy"
+  url_map = google_compute_url_map.url_map.id
+  ssl_certificates = [google_compute_managed_ssl_certificate.ssl_certificate.id]
+}
+
+resource "google_compute_global_forwarding_rule" "https_forwarding_rule" {
+  provider = google-beta
+  name       = "hello-world-https-forwarding-rule"
+  target     = google_compute_target_https_proxy.https_proxy.id
+  port_range = "443"
+  ip_address = google_compute_global_address.static_ip.address
+}
+
 resource "google_compute_target_http_proxy" "http_proxy" {
   provider = google-beta
   name    = "hello-world-http-proxy"
   url_map = google_compute_url_map.url_map.id
 }
 
-resource "google_compute_global_forwarding_rule" "forwarding_rule" {
+resource "google_compute_global_forwarding_rule" "http_forwarding_rule" {
   provider = google-beta
-  name       = "hello-world-forwarding-rule"
+  name       = "hello-world-http-forwarding-rule"
   target     = google_compute_target_http_proxy.http_proxy.id
   port_range = "80"
+  ip_address = google_compute_global_address.static_ip.address
 }
+
+
+# --- Outputs --- 
 
 output "lb_ip_address" {
   description = "The IP address of the load balancer."
-  value       = google_compute_global_forwarding_rule.forwarding_rule.ip_address
+  value       = google_compute_global_address.static_ip.address
 }
