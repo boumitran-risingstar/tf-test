@@ -1,132 +1,113 @@
-variable "project_id" {
-  description = "The project ID to host the service in"
-  default     = "tf-test-476002"
-}
-
-variable "region" {
-  description = "The region to host the service in"
-  default     = "us-central1"
-}
 
 terraform {
   required_providers {
-    google-beta = {
-      source  = "hashicorp/google-beta"
-      version = "~> 5.6.0"
+    google = {
+      source  = "hashicorp/google"
+      version = ">= 5.38.0"
     }
   }
 }
 
-provider "google-beta" {
-  project = var.project_id
-}
-
-data "google_project" "project" {
-  provider = google-beta
+provider "google" {
+  project = "tf-test-476002"
 }
 
 resource "google_project_service" "run" {
-  provider                   = google-beta
-  service                    = "run.googleapis.com"
-  disable_dependent_services = true
+  service = "run.googleapis.com"
 }
 
 resource "google_project_service" "artifactregistry" {
-  provider                   = google-beta
-  service                    = "artifactregistry.googleapis.com"
-  disable_dependent_services = true
+  service = "artifactregistry.googleapis.com"
 }
 
-resource "google_project_service" "apigateway" {
-  provider                   = google-beta
-  service                    = "apigateway.googleapis.com"
-  disable_dependent_services = true
-}
-
-resource "google_project_service" "servicecontrol" {
-  provider                   = google-beta
-  service                    = "servicecontrol.googleapis.com"
-  disable_dependent_services = true
-}
-
-resource "google_project_iam_member" "api_gateway_invoker" {
-  provider = google-beta
-  project  = var.project_id
-  role     = "roles/run.invoker"
-  member   = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-apigateway.iam.gserviceaccount.com"
+resource "google_project_service" "compute" {
+  service = "compute.googleapis.com"
 }
 
 resource "google_artifact_registry_repository" "repository" {
-  provider      = google-beta
-  location      = var.region
+  location      = "us-central1"
   repository_id = "hello-world-repo"
   format        = "DOCKER"
-  depends_on = [
-    google_project_service.artifactregistry,
-    google_project_service.run
-  ]
 }
 
 resource "google_cloud_run_v2_service" "default" {
-  provider = google-beta
   name     = "hello-world-service"
-  location = var.region
+  location = "us-central1"
 
   template {
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.repository.repository_id}/hello-world-image:latest"
+      image = "us-central1-docker.pkg.dev/${google_artifact_registry_repository.repository.project}/hello-world-repo/hello-world-image:latest"
     }
   }
 
   traffic {
-    type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
     percent = 100
+    type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
   }
 
-  ingress = "INGRESS_TRAFFIC_INTERNAL_ONLY"
-
-  depends_on = [
-    google_project_service.run
-  ]
+  ingress = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
 }
 
-resource "google_api_gateway_api" "api" {
-  provider   = google-beta
-  api_id = "hello-world-api"
-  depends_on = [
-    google_project_service.apigateway
-  ]
+resource "google_compute_network" "default" {
+  name                    = "vps-network"
+  auto_create_subnetworks = false
 }
 
-resource "google_api_gateway_api_config" "api_config" {
-  provider      = google-beta
-  api           = google_api_gateway_api.api.api_id
-  api_config_id_prefix = "hello-world-api-config-"
+resource "google_compute_subnetwork" "default" {
+  name          = "vps-subnetwork"
+  ip_cidr_range = "10.0.0.0/24"
+  region        = "us-central1"
+  network       = google_compute_network.default.id
+}
 
-  openapi_documents {
-    document {
-      path     = "spec.yaml"
-      contents = base64encode(templatefile("${path.module}/spec.yaml.tftpl", { service_url = google_cloud_run_v2_service.default.uri }))
-    }
+resource "google_compute_subnetwork" "proxy_only" {
+  name          = "proxy-only-subnet"
+  purpose       = "REGIONAL_MANAGED_PROXY"
+  role          = "ACTIVE"
+  ip_cidr_range = "10.0.1.0/24"
+  region        = "us-central1"
+  network       = google_compute_network.default.id
+}
+
+resource "google_compute_region_network_endpoint_group" "serverless_neg" {
+  name                  = "hello-world-neg"
+  region                = "us-central1"
+  network_endpoint_type = "SERVERLESS"
+  cloud_run {
+    service = google_cloud_run_v2_service.default.name
   }
-  lifecycle {
-    create_before_destroy = true
+}
+
+resource "google_compute_region_backend_service" "default" {
+  name                            = "backend-service"
+  region                          = "us-central1"
+  protocol                        = "HTTP"
+  timeout_sec                     = 30
+  load_balancing_scheme           = "INTERNAL_MANAGED"
+  backend {
+    group = google_compute_region_network_endpoint_group.serverless_neg.id
   }
-  depends_on = [
-    google_api_gateway_api.api
-  ]
 }
 
-resource "google_api_gateway_gateway" "gateway" {
-  provider   = google-beta
-  api_config = google_api_gateway_api_config.api_config.id
-  gateway_id = "hello-world-gateway"
-  region     = var.region
-  depends_on = [
-    google_api_gateway_api_config.api_config
-  ]
+resource "google_compute_region_url_map" "default" {
+  name            = "url-map"
+  region          = "us-central1"
+  default_service = google_compute_region_backend_service.default.id
 }
 
-output "gateway_url" {
-  value = "https://${google_api_gateway_gateway.gateway.default_hostname}"
+resource "google_compute_region_target_http_proxy" "default" {
+  name    = "http-proxy"
+  region  = "us-central1"
+  url_map = google_compute_region_url_map.default.id
+}
+
+resource "google_compute_forwarding_rule" "default" {
+  name                  = "forwarding-rule"
+  region                = "us-central1"
+  ip_protocol           = "TCP"
+  port_range            = "80"
+  load_balancing_scheme = "INTERNAL_MANAGED"
+  target                = google_compute_region_target_http_proxy.default.id
+  network               = google_compute_network.default.id
+  subnetwork            = google_compute_subnetwork.default.id
 }
