@@ -7,6 +7,9 @@ terraform {
     google-beta = {
       source  = "hashicorp/google-beta"
     }
+    time = {
+      source = "hashicorp/time"
+    }
   }
 }
 
@@ -17,6 +20,9 @@ provider "google" {
 provider "google-beta" {
   project = "tf-test-476002"
 }
+
+provider "time" {}
+
 
 resource "google_project_service" "run" {
   service = "run.googleapis.com"
@@ -56,13 +62,6 @@ data "google_project" "project" {}
 resource "google_service_account" "invoker" {
   account_id   = "cloud-run-lb-invoker"
   display_name = "Cloud Run Load Balancer Invoker"
-}
-
-# Grant the Google-managed NEG service account the ability to act as our user-managed service account.
-resource "google_service_account_iam_member" "neg_impersonator" {
-  service_account_id = google_service_account.invoker.name
-  role               = "roles/iam.serviceAccountUser"
-  member             = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-serverless-neg.iam.gserviceaccount.com"
 }
 
 
@@ -118,6 +117,24 @@ resource "google_compute_region_network_endpoint_group" "serverless_neg" {
   }
   depends_on = [google_cloud_run_v2_service.default]
 }
+
+# Wait for the NEG to be created and for the associated Google-managed service account to be provisioned.
+resource "time_sleep" "wait_for_neg_sa" {
+  create_duration = "120s"
+
+  depends_on = [google_compute_region_network_endpoint_group.serverless_neg]
+}
+
+# Grant the Google-managed NEG service account the ability to act as our user-managed service account.
+# This depends on the time_sleep to ensure the SA has been created.
+resource "google_service_account_iam_member" "neg_impersonator" {
+  service_account_id = google_service_account.invoker.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-serverless-neg.iam.gserviceaccount.com"
+
+  depends_on = [time_sleep.wait_for_neg_sa]
+}
+
 
 resource "google_compute_backend_service" "backend_service" {
   provider = google-beta
