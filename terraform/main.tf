@@ -206,6 +206,7 @@ resource "google_compute_backend_service" "backend_service" {
   port_name = "http"
   timeout_sec = 30
   security_policy = google_compute_security_policy.canned_policy.self_link
+  enable_cdn = true
 
   backend {
     group = google_compute_region_network_endpoint_group.serverless_neg.id
