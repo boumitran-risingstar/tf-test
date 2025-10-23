@@ -75,6 +75,7 @@ resource "google_artifact_registry_repository" "repository" {
 }
 
 resource "google_cloud_run_v2_service" "default" {
+  deletion_protection = false
   provider = google-beta
   name     = "hello-world-service"
   location = "us-central1"
