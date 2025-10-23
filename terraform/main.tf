@@ -2,12 +2,21 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 4.0"
+      version = "~> 7.8.0"
+    }
+    google-beta = {
+      source  = "hashicorp/google-beta"
+      version = "~> 7.8.0"
     }
   }
 }
 
 provider "google" {
+  project = var.project_id
+  region  = var.region
+}
+
+provider "google-beta" {
   project = var.project_id
   region  = var.region
 }
@@ -82,11 +91,13 @@ resource "google_cloud_run_v2_service" "default" {
 }
 
 resource "google_api_gateway_api" "api" {
+  provider = google-beta
   api_id = var.api_id
   project = var.project_id
 }
 
 resource "google_api_gateway_api_config" "api_config" {
+  provider = google-beta
   api          = google_api_gateway_api.api.api_id
   api_config_id = var.api_config_id
   project      = var.project_id
@@ -101,15 +112,14 @@ resource "google_api_gateway_api_config" "api_config" {
     }
   }
 
-  gateway_config {}
-
   depends_on = [google_project_service.apigateway]
 }
 
 resource "google_api_gateway_gateway" "gateway" {
+  provider = google-beta
   api_config = google_api_gateway_api_config.api_config.id
   gateway_id = var.gateway_id
-  location   = var.region
+  region     = var.region
   project    = var.project_id
 }
 
