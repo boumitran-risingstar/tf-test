@@ -7,9 +7,6 @@ terraform {
     google-beta = {
       source  = "hashicorp/google-beta"
     }
-    time = {
-      source = "hashicorp/time"
-    }
   }
 }
 
@@ -55,6 +52,20 @@ resource "google_project_service" "compute" {
 
 data "google_project" "project" {}
 
+# Create a dedicated, user-managed service account for the load balancer.
+resource "google_service_account" "invoker" {
+  account_id   = "cloud-run-lb-invoker"
+  display_name = "Cloud Run Load Balancer Invoker"
+}
+
+# Grant the Google-managed NEG service account the ability to act as our user-managed service account.
+resource "google_service_account_iam_member" "neg_impersonator" {
+  service_account_id = google_service_account.invoker.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-serverless-neg.iam.gserviceaccount.com"
+}
+
+
 resource "google_artifact_registry_repository" "repository" {
   location      = "us-central1"
   repository_id = "hello-world-repo"
@@ -69,11 +80,7 @@ resource "google_cloud_run_v2_service" "default" {
   name     = "hello-world-service"
   location = "us-central1"
 
-  # Keep the service internal
   ingress = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
-
-  # Disable deletion protection to allow Terraform to make updates
-  deletion_protection = false
 
   template {
     containers {
@@ -89,6 +96,18 @@ resource "google_cloud_run_v2_service" "default" {
   depends_on = [google_project_service.run]
 }
 
+# Grant our new, user-managed service account the role to invoke the Cloud Run service.
+resource "google_cloud_run_v2_service_iam_member" "invoker" {
+  provider = google-beta
+  location = google_cloud_run_v2_service.default.location
+  name     = google_cloud_run_v2_service.default.name
+  role     = "roles/run.invoker"
+  member   = google_service_account.invoker.member
+
+  depends_on = [google_cloud_run_v2_service.default]
+}
+
+
 resource "google_compute_region_network_endpoint_group" "serverless_neg" {
   provider = google-beta
   name                  = "hello-world-neg"
@@ -98,13 +117,6 @@ resource "google_compute_region_network_endpoint_group" "serverless_neg" {
     service = google_cloud_run_v2_service.default.name
   }
   depends_on = [google_cloud_run_v2_service.default]
-}
-
-# Introduce a delay to allow the service account to be created
-resource "time_sleep" "wait_for_service_account" {
-  create_duration = "60s"
-
-  depends_on = [google_compute_region_network_endpoint_group.serverless_neg]
 }
 
 resource "google_compute_backend_service" "backend_service" {
@@ -141,14 +153,4 @@ resource "google_compute_global_forwarding_rule" "forwarding_rule" {
   name       = "hello-world-forwarding-rule"
   target     = google_compute_target_http_proxy.http_proxy.id
   port_range = "80"
-}
-
-resource "google_cloud_run_v2_service_iam_member" "invoker" {
-  provider = google-beta
-  location = google_cloud_run_v2_service.default.location
-  name     = google_cloud_run_v2_service.default.name
-  role     = "roles/run.invoker"
-  member   = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-serverless-neg.iam.gserviceaccount.com"
-
-  depends_on = [time_sleep.wait_for_service_account]
 }
