@@ -13,12 +13,17 @@ terraform {
   }
 }
 
+variable "project_id" {
+  description = "The Google Cloud project ID."
+  type        = string
+}
+
 provider "google" {
-  project = "tf-test-476002"
+  project = var.project_id
 }
 
 provider "google-beta" {
-  project = "tf-test-476002"
+  project = var.project_id
 }
 
 provider "time" {}
@@ -58,13 +63,6 @@ resource "google_project_service" "compute" {
 
 data "google_project" "project" {}
 
-# Create a dedicated, user-managed service account for the load balancer.
-resource "google_service_account" "invoker" {
-  account_id   = "cloud-run-lb-invoker"
-  display_name = "Cloud Run Load Balancer Invoker"
-}
-
-
 resource "google_artifact_registry_repository" "repository" {
   location      = "us-central1"
   repository_id = "hello-world-repo"
@@ -96,13 +94,13 @@ resource "google_cloud_run_v2_service" "default" {
   depends_on = [google_project_service.run]
 }
 
-# Grant our new, user-managed service account the role to invoke the Cloud Run service.
+# Allow unauthenticated access to the Cloud Run service.
 resource "google_cloud_run_v2_service_iam_member" "invoker" {
   provider = google-beta
   location = google_cloud_run_v2_service.default.location
   name     = google_cloud_run_v2_service.default.name
   role     = "roles/run.invoker"
-  member   = google_service_account.invoker.member
+  member   = "allUsers"
 
   depends_on = [google_cloud_run_v2_service.default]
 }
