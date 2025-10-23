@@ -127,6 +127,16 @@ resource "google_api_gateway_gateway" "gateway" {
   project    = var.project_id
 }
 
+data "google_project" "project" {}
+
+resource "google_cloud_run_service_iam_member" "invoker" {
+  location = google_cloud_run_v2_service.default.location
+  project  = google_cloud_run_v2_service.default.project
+  service  = google_cloud_run_v2_service.default.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-apigateway.iam.gserviceaccount.com"
+}
+
 output "gateway_url" {
   value = "https://${google_api_gateway_gateway.gateway.default_hostname}"
 }
