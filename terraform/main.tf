@@ -3,11 +3,12 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = ">= 5.38.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = ">= 5.38.0"
+    }
+    time = {
+      source = "hashicorp/time"
     }
   }
 }
@@ -20,39 +21,63 @@ provider "google-beta" {
   project = "tf-test-476002"
 }
 
-data "google_project" "project" {}
-
-# Enable necessary APIs
 resource "google_project_service" "run" {
   service = "run.googleapis.com"
 }
+
 resource "google_project_service" "artifactregistry" {
   service = "artifactregistry.googleapis.com"
 }
-resource "google_project_service" "compute" {
-  service = "compute.googleapis.com"
-}
+
 resource "google_project_service" "iam" {
   service = "iam.googleapis.com"
 }
 
+resource "google_project_service" "cloudbuild" {
+  service = "cloudbuild.googleapis.com"
+}
+
+resource "google_project_service" "apigateway" {
+  service = "apigateway.googleapis.com"
+}
+
+resource "google_project_service" "servicemanagement" {
+  service = "servicemanagement.googleapis.com"
+}
+
+resource "google_project_service" "servicecontrol" {
+  service = "servicecontrol.googleapis.com"
+}
+
+resource "google_project_service" "compute" {
+  service = "compute.googleapis.com"
+}
+
+data "google_project" "project" {}
 
 resource "google_artifact_registry_repository" "repository" {
   location      = "us-central1"
   repository_id = "hello-world-repo"
+  description   = "Repository for the Hello World application."
   format        = "DOCKER"
+
+  depends_on = [google_project_service.artifactregistry]
 }
 
 resource "google_cloud_run_v2_service" "default" {
+  provider = google-beta
   name     = "hello-world-service"
   location = "us-central1"
 
   # Keep the service internal
   ingress = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
 
+  # Disable deletion protection to allow Terraform to make updates
+  deletion_protection = false
+
   template {
     containers {
-      image = "us-central1-docker.pkg.dev/${google_artifact_registry_repository.repository.project}/hello-world-repo/hello-world-image:latest"
+      image = "us-central1-docker.pkg.dev/${data.google_project.project.project_id}/${google_artifact_registry_repository.repository.repository_id}/hello-world-image:latest"
     }
   }
 
@@ -64,33 +89,30 @@ resource "google_cloud_run_v2_service" "default" {
   depends_on = [google_project_service.run]
 }
 
-# Grant the Google-managed LB Service Account the permission to invoke the Cloud Run service.
-resource "google_cloud_run_v2_service_iam_member" "invoker" {
-  project  = google_cloud_run_v2_service.default.project
-  location = google_cloud_run_v2_service.default.location
-  name     = google_cloud_run_v2_service.default.name
-  role     = "roles/run.invoker"
-  # This is the identity of the Google Cloud Load Balancer service agent.
-  member   = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-loadbalancing.iam.gserviceaccount.com"
-}
-
 resource "google_compute_region_network_endpoint_group" "serverless_neg" {
+  provider = google-beta
   name                  = "hello-world-neg"
   network_endpoint_type = "SERVERLESS"
   region                = "us-central1"
   cloud_run {
     service = google_cloud_run_v2_service.default.name
   }
-  depends_on = [google_project_service.compute]
+  depends_on = [google_cloud_run_v2_service.default]
 }
 
+# Introduce a delay to allow the service account to be created
+resource "time_sleep" "wait_for_service_account" {
+  create_duration = "60s"
+
+  depends_on = [google_compute_region_network_endpoint_group.serverless_neg]
+}
 
 resource "google_compute_backend_service" "backend_service" {
+  provider = google-beta
   name      = "hello-world-backend-service"
   protocol  = "HTTP"
   port_name = "http"
   timeout_sec = 30
-  # No complex authentication blocks needed here.
 
   backend {
     group = google_compute_region_network_endpoint_group.serverless_neg.id
@@ -103,22 +125,30 @@ resource "google_compute_backend_service" "backend_service" {
 }
 
 resource "google_compute_url_map" "url_map" {
+  provider = google-beta
   name            = "hello-world-url-map"
   default_service = google_compute_backend_service.backend_service.id
 }
 
 resource "google_compute_target_http_proxy" "http_proxy" {
+  provider = google-beta
   name    = "hello-world-http-proxy"
   url_map = google_compute_url_map.url_map.id
 }
 
 resource "google_compute_global_forwarding_rule" "forwarding_rule" {
+  provider = google-beta
   name       = "hello-world-forwarding-rule"
   target     = google_compute_target_http_proxy.http_proxy.id
   port_range = "80"
 }
 
-output "load_balancer_ip" {
-  description = "The IP address of the Global Load Balancer."
-  value       = google_compute_global_forwarding_rule.forwarding_rule.ip_address
+resource "google_cloud_run_v2_service_iam_member" "invoker" {
+  provider = google-beta
+  location = google_cloud_run_v2_service.default.location
+  name     = google_cloud_run_v2_service.default.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-serverless-neg.iam.gserviceaccount.com"
+
+  depends_on = [time_sleep.wait_for_service_account]
 }
