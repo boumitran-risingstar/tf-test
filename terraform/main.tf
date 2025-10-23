@@ -154,3 +154,8 @@ resource "google_compute_global_forwarding_rule" "forwarding_rule" {
   target     = google_compute_target_http_proxy.http_proxy.id
   port_range = "80"
 }
+
+output "lb_ip_address" {
+  description = "The IP address of the load balancer."
+  value       = google_compute_global_forwarding_rule.forwarding_rule.ip_address
+}
