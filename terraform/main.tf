@@ -69,8 +69,8 @@ resource "google_project_service" "compute" {
 data "google_project" "project" {}
 
 resource "google_artifact_registry_repository" "repository" {
-  location      = "us-central1"
-  repository_id = "hello-world-repo"
+  location      = var.gcp_region
+  repository_id = var.repository_id
   description   = "Repository for the Hello World application."
   format        = "DOCKER"
 
@@ -79,7 +79,7 @@ resource "google_artifact_registry_repository" "repository" {
 
 resource "null_resource" "build_and_push_image" {
   provisioner "local-exec" {
-    command = "gcloud builds submit --tag us-central1-docker.pkg.dev/${data.google_project.project.project_id}/${google_artifact_registry_repository.repository.repository_id}/hello-world-image:latest ../src"
+    command = "gcloud builds submit --tag ${var.gcp_region}-docker.pkg.dev/${data.google_project.project.project_id}/${google_artifact_registry_repository.repository.repository_id}/${var.image_name}:latest ../src"
   }
 
   depends_on = [google_artifact_registry_repository.repository]
@@ -94,14 +94,14 @@ resource "time_sleep" "wait_for_image" {
 resource "google_cloud_run_v2_service" "default" {
   deletion_protection = false
   provider = google-beta
-  name     = "hello-world-service"
-  location = "us-central1"
+  name     = var.service_name
+  location = var.gcp_region
 
   ingress = var.use_load_balancer ? "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER" : "INGRESS_TRAFFIC_ALL"
 
   template {
     containers {
-      image = "us-central1-docker.pkg.dev/${data.google_project.project.project_id}/${google_artifact_registry_repository.repository.repository_id}/hello-world-image:latest"
+      image = "${var.gcp_region}-docker.pkg.dev/${data.google_project.project.project_id}/${google_artifact_registry_repository.repository.repository_id}/${var.image_name}:latest"
     }
   }
 
@@ -128,9 +128,9 @@ resource "google_cloud_run_v2_service_iam_member" "invoker" {
 resource "google_compute_region_network_endpoint_group" "serverless_neg" {
   count    = var.use_load_balancer ? 1 : 0
   provider = google-beta
-  name                  = "hello-world-neg"
+  name                  = var.neg_name
   network_endpoint_type = "SERVERLESS"
-  region                = "us-central1"
+  region                = var.gcp_region
   cloud_run {
     service = google_cloud_run_v2_service.default.name
   }
@@ -140,7 +140,7 @@ resource "google_compute_region_network_endpoint_group" "serverless_neg" {
 resource "google_compute_security_policy" "canned_policy" {
   count       = var.use_load_balancer ? 1 : 0
   provider    = google-beta
-  name        = "hello-world-policy"
+  name        = var.policy_name
   description = "Basic WAF and rate limiting policy"
 
   rule {
@@ -204,7 +204,7 @@ resource "google_compute_security_policy" "canned_policy" {
 resource "google_compute_backend_service" "backend_service" {
   count     = var.use_load_balancer ? 1 : 0
   provider  = google-beta
-  name      = "hello-world-backend-service"
+  name      = var.backend_service_name
   protocol  = "HTTP"
   port_name = "http"
   timeout_sec = 30
@@ -224,7 +224,7 @@ resource "google_compute_backend_service" "backend_service" {
 resource "google_compute_url_map" "url_map" {
   count           = var.use_load_balancer ? 1 : 0
   provider        = google-beta
-  name            = "hello-world-url-map"
+  name            = var.url_map_name
   default_service = google_compute_backend_service.backend_service[0].id
 }
 
@@ -233,22 +233,22 @@ resource "google_compute_url_map" "url_map" {
 resource "google_compute_global_address" "static_ip" {
   count    = var.use_load_balancer ? 1 : 0
   provider = google-beta
-  name     = "hello-world-static-ip"
+  name     = var.static_ip_name
 }
 
 resource "google_compute_managed_ssl_certificate" "ssl_certificate" {
   count    = var.use_load_balancer ? 1 : 0
   provider = google-beta
-  name     = "hello-world-ssl-cert"
+  name     = var.ssl_certificate_name
   managed {
-    domains = ["mouthmetrics.32studio.org"]
+    domains = [var.domain_name]
   }
 }
 
 resource "google_compute_target_https_proxy" "https_proxy" {
   count            = var.use_load_balancer ? 1 : 0
   provider         = google-beta
-  name             = "hello-world-https-proxy"
+  name             = var.https_proxy_name
   url_map          = google_compute_url_map.url_map[0].id
   ssl_certificates = [google_compute_managed_ssl_certificate.ssl_certificate[0].id]
 }
@@ -256,7 +256,7 @@ resource "google_compute_target_https_proxy" "https_proxy" {
 resource "google_compute_global_forwarding_rule" "https_forwarding_rule" {
   count      = var.use_load_balancer ? 1 : 0
   provider   = google-beta
-  name       = "hello-world-https-forwarding-rule"
+  name       = var.https_forwarding_rule_name
   target     = google_compute_target_https_proxy.https_proxy[0].id
   port_range = "443"
   ip_address = google_compute_global_address.static_ip[0].address
@@ -265,14 +265,14 @@ resource "google_compute_global_forwarding_rule" "https_forwarding_rule" {
 resource "google_compute_target_http_proxy" "http_proxy" {
   count    = var.use_load_balancer ? 1 : 0
   provider = google-beta
-  name     = "hello-world-http-proxy"
+  name     = var.http_proxy_name
   url_map  = google_compute_url_map.url_map[0].id
 }
 
 resource "google_compute_global_forwarding_rule" "http_forwarding_rule" {
   count      = var.use_load_balancer ? 1 : 0
   provider   = google-beta
-  name       = "hello-world-http-forwarding-rule"
+  name       = var.http_forwarding_rule_name
   target     = google_compute_target_http_proxy.http_proxy[0].id
   port_range = "80"
   ip_address = google_compute_global_address.static_ip[0].address
@@ -284,7 +284,7 @@ resource "google_cloud_run_domain_mapping" "default" {
   count    = var.use_load_balancer ? 0 : 1
   provider = google-beta
   location = google_cloud_run_v2_service.default.location
-  name     = "mouthmetrics.32studio.org"
+  name     = var.domain_name
 
   metadata {
     namespace = var.project_id
