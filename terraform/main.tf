@@ -97,7 +97,7 @@ resource "google_cloud_run_v2_service" "default" {
   name     = "hello-world-service"
   location = "us-central1"
 
-  ingress = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
+  ingress = var.use_load_balancer ? "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER" : "INGRESS_TRAFFIC_ALL"
 
   template {
     containers {
@@ -126,6 +126,7 @@ resource "google_cloud_run_v2_service_iam_member" "invoker" {
 
 
 resource "google_compute_region_network_endpoint_group" "serverless_neg" {
+  count    = var.use_load_balancer ? 1 : 0
   provider = google-beta
   name                  = "hello-world-neg"
   network_endpoint_type = "SERVERLESS"
@@ -137,6 +138,7 @@ resource "google_compute_region_network_endpoint_group" "serverless_neg" {
 }
 
 resource "google_compute_security_policy" "canned_policy" {
+  count       = var.use_load_balancer ? 1 : 0
   provider    = google-beta
   name        = "hello-world-policy"
   description = "Basic WAF and rate limiting policy"
@@ -200,16 +202,17 @@ resource "google_compute_security_policy" "canned_policy" {
 }
 
 resource "google_compute_backend_service" "backend_service" {
-  provider = google-beta
+  count     = var.use_load_balancer ? 1 : 0
+  provider  = google-beta
   name      = "hello-world-backend-service"
   protocol  = "HTTP"
   port_name = "http"
   timeout_sec = 30
-  security_policy = google_compute_security_policy.canned_policy.self_link
+  security_policy = google_compute_security_policy.canned_policy[0].self_link
   enable_cdn = true
 
   backend {
-    group = google_compute_region_network_endpoint_group.serverless_neg.id
+    group = google_compute_region_network_endpoint_group.serverless_neg[0].id
   }
 
   log_config {
@@ -219,59 +222,89 @@ resource "google_compute_backend_service" "backend_service" {
 }
 
 resource "google_compute_url_map" "url_map" {
-  provider = google-beta
+  count           = var.use_load_balancer ? 1 : 0
+  provider        = google-beta
   name            = "hello-world-url-map"
-  default_service = google_compute_backend_service.backend_service.id
+  default_service = google_compute_backend_service.backend_service[0].id
 }
 
 # --- Networking and SSL for HTTPS --- 
 
 resource "google_compute_global_address" "static_ip" {
+  count    = var.use_load_balancer ? 1 : 0
   provider = google-beta
-  name = "hello-world-static-ip"
+  name     = "hello-world-static-ip"
 }
 
 resource "google_compute_managed_ssl_certificate" "ssl_certificate" {
+  count    = var.use_load_balancer ? 1 : 0
   provider = google-beta
-  name = "hello-world-ssl-cert"
+  name     = "hello-world-ssl-cert"
   managed {
     domains = ["mouthmetrics.32studio.org"]
   }
 }
 
 resource "google_compute_target_https_proxy" "https_proxy" {
-  provider = google-beta
-  name    = "hello-world-https-proxy"
-  url_map = google_compute_url_map.url_map.id
-  ssl_certificates = [google_compute_managed_ssl_certificate.ssl_certificate.id]
+  count            = var.use_load_balancer ? 1 : 0
+  provider         = google-beta
+  name             = "hello-world-https-proxy"
+  url_map          = google_compute_url_map.url_map[0].id
+  ssl_certificates = [google_compute_managed_ssl_certificate.ssl_certificate[0].id]
 }
 
 resource "google_compute_global_forwarding_rule" "https_forwarding_rule" {
-  provider = google-beta
+  count      = var.use_load_balancer ? 1 : 0
+  provider   = google-beta
   name       = "hello-world-https-forwarding-rule"
-  target     = google_compute_target_https_proxy.https_proxy.id
+  target     = google_compute_target_https_proxy.https_proxy[0].id
   port_range = "443"
-  ip_address = google_compute_global_address.static_ip.address
+  ip_address = google_compute_global_address.static_ip[0].address
 }
 
 resource "google_compute_target_http_proxy" "http_proxy" {
+  count    = var.use_load_balancer ? 1 : 0
   provider = google-beta
-  name    = "hello-world-http-proxy"
-  url_map = google_compute_url_map.url_map.id
+  name     = "hello-world-http-proxy"
+  url_map  = google_compute_url_map.url_map[0].id
 }
 
 resource "google_compute_global_forwarding_rule" "http_forwarding_rule" {
-  provider = google-beta
+  count      = var.use_load_balancer ? 1 : 0
+  provider   = google-beta
   name       = "hello-world-http-forwarding-rule"
-  target     = google_compute_target_http_proxy.http_proxy.id
+  target     = google_compute_target_http_proxy.http_proxy[0].id
   port_range = "80"
-  ip_address = google_compute_global_address.static_ip.address
+  ip_address = google_compute_global_address.static_ip[0].address
+}
+
+# --- Cloud Run Domain Mapping --- 
+
+resource "google_cloud_run_domain_mapping" "default" {
+  count    = var.use_load_balancer ? 0 : 1
+  provider = google-beta
+  location = google_cloud_run_v2_service.default.location
+  name     = "mouthmetrics.32studio.org"
+
+  metadata {
+    namespace = var.project_id
+  }
+
+  spec {
+    route_name = google_cloud_run_v2_service.default.name
+    force_override = true
+  }
 }
 
 
 # --- Outputs --- 
 
 output "lb_ip_address" {
-  description = "The IP address of the load balancer."
-  value       = google_compute_global_address.static_ip.address
+  description = "The IP address of the load balancer (if created)."
+  value       = var.use_load_balancer ? google_compute_global_address.static_ip[0].address : "N/A"
+}
+
+output "service_url" {
+    description = "The URL of the Cloud Run service"
+    value = google_cloud_run_v2_service.default.uri
 }
