@@ -22,23 +22,20 @@ provider "google-beta" {
 
 data "google_project" "project" {}
 
+# Enable necessary APIs
 resource "google_project_service" "run" {
-  service                    = "run.googleapis.com"
-  disable_dependent_services = true
-  disable_on_destroy         = true
+  service = "run.googleapis.com"
 }
-
 resource "google_project_service" "artifactregistry" {
-  service                    = "artifactregistry.googleapis.com"
-  disable_dependent_services = true
-  disable_on_destroy         = true
+  service = "artifactregistry.googleapis.com"
+}
+resource "google_project_service" "compute" {
+  service = "compute.googleapis.com"
+}
+resource "google_project_service" "iam" {
+  service = "iam.googleapis.com"
 }
 
-resource "google_project_service" "compute" {
-  service                    = "compute.googleapis.com"
-  disable_dependent_services = true
-  disable_on_destroy         = true
-}
 
 resource "google_artifact_registry_repository" "repository" {
   location      = "us-central1"
@@ -50,6 +47,9 @@ resource "google_cloud_run_v2_service" "default" {
   name     = "hello-world-service"
   location = "us-central1"
 
+  # Keep the service internal
+  ingress = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
+
   template {
     containers {
       image = "us-central1-docker.pkg.dev/${google_artifact_registry_repository.repository.project}/hello-world-repo/hello-world-image:latest"
@@ -60,8 +60,18 @@ resource "google_cloud_run_v2_service" "default" {
     percent = 100
     type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
   }
-  
-  ingress = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
+
+  depends_on = [google_project_service.run]
+}
+
+# Grant the Google-managed LB Service Account the permission to invoke the Cloud Run service.
+resource "google_cloud_run_v2_service_iam_member" "invoker" {
+  project  = google_cloud_run_v2_service.default.project
+  location = google_cloud_run_v2_service.default.location
+  name     = google_cloud_run_v2_service.default.name
+  role     = "roles/run.invoker"
+  # This is the identity of the Google Cloud Load Balancer service agent.
+  member   = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-loadbalancing.iam.gserviceaccount.com"
 }
 
 resource "google_compute_region_network_endpoint_group" "serverless_neg" {
@@ -71,22 +81,24 @@ resource "google_compute_region_network_endpoint_group" "serverless_neg" {
   cloud_run {
     service = google_cloud_run_v2_service.default.name
   }
+  depends_on = [google_project_service.compute]
 }
+
 
 resource "google_compute_backend_service" "backend_service" {
   name      = "hello-world-backend-service"
   protocol  = "HTTP"
   port_name = "http"
   timeout_sec = 30
-  enable_cdn = true
-
-  log_config {
-    enable = true
-    sample_rate = 1.0
-  }
+  # No complex authentication blocks needed here.
 
   backend {
     group = google_compute_region_network_endpoint_group.serverless_neg.id
+  }
+
+  log_config {
+    enable      = true
+    sample_rate = 1.0
   }
 }
 
