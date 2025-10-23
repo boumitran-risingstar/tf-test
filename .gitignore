@@ -1,0 +1,24 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+.DS_Store
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
