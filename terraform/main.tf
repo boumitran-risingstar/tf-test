@@ -136,12 +136,76 @@ resource "google_compute_region_network_endpoint_group" "serverless_neg" {
   depends_on = [google_cloud_run_v2_service.default]
 }
 
+resource "google_compute_security_policy" "canned_policy" {
+  provider    = google-beta
+  name        = "hello-world-policy"
+  description = "Basic WAF and rate limiting policy"
+
+  rule {
+    action   = "deny(403)"
+    priority = 1000
+    match {
+      expr {
+        expression = "evaluatePreconfiguredExpr('xss-stable')"
+      }
+    }
+    description = "XSS Protection"
+  }
+
+  rule {
+    action   = "deny(403)"
+    priority = 1100
+    match {
+      expr {
+        expression = "evaluatePreconfiguredExpr('sqli-stable')"
+      }
+    }
+    description = "SQLi Protection"
+  }
+
+  # Rule for rate limiting
+  rule {
+    action   = "throttle"
+    priority = 1500
+    match {
+      versioned_expr = "SRC_IPS_V1"
+      config {
+        src_ip_ranges = ["*"]
+      }
+    }
+    rate_limit_options {
+      conform_action = "allow"
+      exceed_action  = "deny(429)"
+      enforce_on_key = "IP"
+      rate_limit_threshold {
+        count = 100
+        interval_sec = 60
+      }
+    }
+    description = "Rate limit to 100 requests per minute per IP"
+  }
+
+  # Default rule to allow all other traffic
+  rule {
+    action   = "allow"
+    priority = 2147483647
+    match {
+      versioned_expr = "SRC_IPS_V1"
+      config {
+        src_ip_ranges = ["*"]
+      }
+    }
+    description = "Default allow"
+  }
+}
+
 resource "google_compute_backend_service" "backend_service" {
   provider = google-beta
   name      = "hello-world-backend-service"
   protocol  = "HTTP"
   port_name = "http"
   timeout_sec = 30
+  security_policy = google_compute_security_policy.canned_policy.self_link
 
   backend {
     group = google_compute_region_network_endpoint_group.serverless_neg.id
