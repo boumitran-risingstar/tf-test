@@ -60,8 +60,8 @@ resource "google_cloud_run_v2_service" "default" {
     percent = 100
     type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
   }
-
-  ingress = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  
+  ingress = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
 }
 
 resource "google_compute_region_network_endpoint_group" "serverless_neg" {
