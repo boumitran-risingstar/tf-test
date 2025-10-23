@@ -99,9 +99,13 @@ resource "google_api_gateway_api" "api" {
 resource "google_api_gateway_api_config" "api_config" {
   provider = google-beta
   api          = google_api_gateway_api.api.api_id
-  api_config_id = var.api_config_id
+  api_config_id = "${var.api_config_id}-${substr(sha1(templatefile("${path.module}/spec.yaml.tftpl", { service_url = google_cloud_run_v2_service.default.uri })), 0, 7)}"
   project      = var.project_id
   display_name = "Hello World API Config"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 
   openapi_documents {
     document {
