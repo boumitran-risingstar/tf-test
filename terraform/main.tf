@@ -1,144 +1,130 @@
-terraform {
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 7.8.0"
-    }
-    google-beta = {
-      source  = "hashicorp/google-beta"
-      version = "~> 7.8.0"
-    }
-  }
+variable "project_id" {
+  description = "The project ID to host the service in"
+  default     = "tf-test-476002"
 }
 
-provider "google" {
-  project = var.project_id
-  region  = var.region
+variable "region" {
+  description = "The region to host the service in"
+  default     = "us-central1"
+}
+
+terraform {
+  required_providers {
+    google-beta = {
+      source  = "hashicorp/google-beta"
+      version = "~> 5.6.0"
+    }
+  }
 }
 
 provider "google-beta" {
   project = var.project_id
-  region  = var.region
 }
 
-variable "project_id" {
-  description = "The GCP project ID."
-  type        = string
-}
-
-variable "region" {
-  description = "The GCP region."
-  type        = string
-  default     = "us-central1"
-}
-
-variable "service_name" {
-  description = "The name of the Cloud Run service."
-  type        = string
-  default     = "hello-world-service"
-}
-
-variable "api_id" {
-  description = "The ID of the API."
-  type        = string
-  default     = "hello-world-api"
-}
-
-variable "api_config_id" {
-  description = "The ID of the API config."
-  type        = string
-  default     = "hello-world-api-config"
-}
-
-variable "gateway_id" {
-  description = "The ID of the API Gateway."
-  type        = string
-  default     = "hello-world-gateway"
+data "google_project" "project" {
+  provider = google-beta
 }
 
 resource "google_project_service" "run" {
-  service = "run.googleapis.com"
+  provider                   = google-beta
+  service                    = "run.googleapis.com"
+  disable_dependent_services = true
 }
 
 resource "google_project_service" "artifactregistry" {
-  service = "artifactregistry.googleapis.com"
+  provider                   = google-beta
+  service                    = "artifactregistry.googleapis.com"
+  disable_dependent_services = true
 }
 
 resource "google_project_service" "apigateway" {
-  service = "apigateway.googleapis.com"
+  provider                   = google-beta
+  service                    = "apigateway.googleapis.com"
+  disable_dependent_services = true
 }
 
 resource "google_project_service" "servicecontrol" {
-  service = "servicecontrol.googleapis.com"
+  provider                   = google-beta
+  service                    = "servicecontrol.googleapis.com"
+  disable_dependent_services = true
+}
+
+resource "google_project_iam_member" "api_gateway_invoker" {
+  provider = google-beta
+  project  = var.project_id
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-apigateway.iam.gserviceaccount.com"
 }
 
 resource "google_artifact_registry_repository" "repository" {
+  provider      = google-beta
   location      = var.region
   repository_id = "hello-world-repo"
   format        = "DOCKER"
-
-  depends_on = [google_project_service.artifactregistry]
+  depends_on = [
+    google_project_service.artifactregistry,
+    google_project_service.run
+  ]
 }
 
 resource "google_cloud_run_v2_service" "default" {
-  name     = var.service_name
+  provider = google-beta
+  name     = "hello-world-service"
   location = var.region
-  ingress  = "INGRESS_TRAFFIC_INTERNAL_ONLY"
 
   template {
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.repository.repository_id}/hello-world:latest"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.repository.repository_id}/hello-world-image:latest"
     }
   }
 
-  depends_on = [google_project_service.run]
+  traffic {
+    type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
+    percent = 100
+  }
+
+  ingress = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+
+  depends_on = [
+    google_project_service.run
+  ]
 }
 
 resource "google_api_gateway_api" "api" {
-  provider = google-beta
-  api_id = var.api_id
-  project = var.project_id
+  provider   = google-beta
+  api_id = "hello-world-api"
+  depends_on = [
+    google_project_service.apigateway
+  ]
 }
 
 resource "google_api_gateway_api_config" "api_config" {
-  provider = google-beta
-  api          = google_api_gateway_api.api.api_id
-  api_config_id = "${var.api_config_id}-${substr(sha1(templatefile("${path.module}/spec.yaml.tftpl", { service_url = google_cloud_run_v2_service.default.uri })), 0, 7)}"
-  project      = var.project_id
-  display_name = "Hello World API Config"
-
-  lifecycle {
-    create_before_destroy = true
-  }
+  provider      = google-beta
+  api           = google_api_gateway_api.api.api_id
+  api_config_id_prefix = "hello-world-api-config-"
 
   openapi_documents {
     document {
       path     = "spec.yaml"
-      contents = base64encode(templatefile("${path.module}/spec.yaml.tftpl", {
-        service_url = google_cloud_run_v2_service.default.uri
-      }))
+      contents = base64encode(templatefile("${path.module}/spec.yaml.tftpl", { service_url = google_cloud_run_v2_service.default.uri }))
     }
   }
-
-  depends_on = [google_project_service.apigateway]
+  lifecycle {
+    create_before_destroy = true
+  }
+  depends_on = [
+    google_api_gateway_api.api
+  ]
 }
 
 resource "google_api_gateway_gateway" "gateway" {
-  provider = google-beta
+  provider   = google-beta
   api_config = google_api_gateway_api_config.api_config.id
-  gateway_id = var.gateway_id
+  gateway_id = "hello-world-gateway"
   region     = var.region
-  project    = var.project_id
-}
-
-data "google_project" "project" {}
-
-resource "google_cloud_run_service_iam_member" "invoker" {
-  location = google_cloud_run_v2_service.default.location
-  project  = google_cloud_run_v2_service.default.project
-  service  = google_cloud_run_v2_service.default.name
-  role     = "roles/run.invoker"
-  member   = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-apigateway.iam.gserviceaccount.com"
+  depends_on = [
+    google_api_gateway_api_config.api_config
+  ]
 }
 
 output "gateway_url" {

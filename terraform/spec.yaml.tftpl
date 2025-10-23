@@ -8,12 +8,26 @@ schemes:
 produces:
   - application/json
 paths:
+  /:
+    get:
+      summary: Say hello world.
+      operationId: root
+      x-google-backend:
+        address: ${service_url}/
+        path_translation: CONSTANT_ADDRESS
+        jwt_audience: ${service_url}
+      responses:
+        '200':
+          description: A successful response
+          schema:
+            type: string
   /hello:
     get:
       summary: Say hello.
       operationId: hello
       x-google-backend:
         address: ${service_url}/hello
+        path_translation: CONSTANT_ADDRESS
         jwt_audience: ${service_url}
       responses:
         '200':

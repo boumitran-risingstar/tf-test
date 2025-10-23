@@ -8,9 +8,12 @@
     pkgs.nodejs_20
     pkgs.google-cloud-sdk
     pkgs.terraform
+    pkgs.docker
   ];
   # Sets environment variables in the workspace
   env = {};
+  # Enable the Docker daemon
+  services.docker.enable = true;
   idx = {
     # Search for the extensions you want on https://open-vsx.org/ and use "publisher.id"
     extensions = [
@@ -21,16 +24,10 @@
     previews = {
       enable = true;
       previews = {
-        # web = {
-        #   # Example: run "npm run dev" with PORT set to IDX's defined port for previews,
-        #   # and show it in IDX's web preview panel
-        #   command = ["npm" "run" "dev"];
-        #   manager = "web";
-        #   env = {
-        #     # Environment variables to set for your server
-        #     PORT = "$PORT";
-        #   };
-        # };
+        web = {
+          command = ["npm" "start" "--prefix" "src"];
+          manager = "web";
+        };
       };
     };
     # Workspace lifecycle hooks
@@ -38,14 +35,16 @@
       # Runs when a workspace is first created
       onCreate = {
         npm-install = "npm install --prefix src";
+        # Configure Docker to use gcloud for authentication with Artifact Registry
+        configure-docker = "gcloud auth configure-docker us-central1-docker.pkg.dev --quiet";
         # Open editors for the following files by default, if they exist:
         default.openFiles = [ "terraform/main.tf" "src/index.js" ];
       };
       # Runs when the workspace is (re)started
       onStart = {
-        # Example: start a background task to watch and re-build backend code
-        # watch-backend = "npm run watch-backend";
+        start-server = "npm start --prefix src";
       };
     };
   };
 }
+# Trigger reload
