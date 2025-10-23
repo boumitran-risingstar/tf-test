@@ -13,9 +13,8 @@ paths:
       summary: Say hello world.
       operationId: root
       x-google-backend:
-        address: ${service_url}
-        path_translation: CONSTANT_ADDRESS
-        jwt_audience: ${service_url}
+        address: ${run_service_url}
+        jwt_audience: ${run_service_url}
       responses:
         '200':
           description: A successful response
@@ -26,9 +25,8 @@ paths:
       summary: Say hello.
       operationId: hello
       x-google-backend:
-        address: ${service_url}/hello
-        path_translation: CONSTANT_ADDRESS
-        jwt_audience: ${service_url}
+        address: ${run_service_url}
+        jwt_audience: ${run_service_url}
       responses:
         '200':
           description: A successful response
