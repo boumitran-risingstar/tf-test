@@ -10,6 +10,9 @@ terraform {
     time = {
       source = "hashicorp/time"
     }
+    null = {
+      source = "hashicorp/null"
+    }
   }
 }
 
@@ -27,6 +30,8 @@ provider "google-beta" {
 }
 
 provider "time" {}
+
+provider "null" {}
 
 
 resource "google_project_service" "run" {
@@ -72,6 +77,20 @@ resource "google_artifact_registry_repository" "repository" {
   depends_on = [google_project_service.artifactregistry]
 }
 
+resource "null_resource" "build_and_push_image" {
+  provisioner "local-exec" {
+    command = "gcloud builds submit --tag us-central1-docker.pkg.dev/${data.google_project.project.project_id}/${google_artifact_registry_repository.repository.repository_id}/hello-world-image:latest ../src"
+  }
+
+  depends_on = [google_artifact_registry_repository.repository]
+}
+
+resource "time_sleep" "wait_for_image" {
+  create_duration = "180s"
+
+  depends_on = [null_resource.build_and_push_image]
+}
+
 resource "google_cloud_run_v2_service" "default" {
   deletion_protection = false
   provider = google-beta
@@ -91,7 +110,7 @@ resource "google_cloud_run_v2_service" "default" {
     type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
   }
 
-  depends_on = [google_project_service.run]
+  depends_on = [time_sleep.wait_for_image]
 }
 
 # Allow unauthenticated access to the Cloud Run service.
