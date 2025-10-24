@@ -1,21 +1,3 @@
-
-terraform {
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-    }
-    google-beta = {
-      source  = "hashicorp/google-beta"
-    }
-    time = {
-      source = "hashicorp/time"
-    }
-    null = {
-      source = "hashicorp/null"
-    }
-  }
-}
-
 provider "google" {
   project = var.project_id
 }
@@ -25,8 +7,6 @@ provider "google-beta" {
 }
 
 provider "time" {}
-
-provider "null" {}
 
 
 resource "google_project_service" "run" {
@@ -59,6 +39,12 @@ resource "google_project_service" "servicecontrol" {
 
 resource "google_project_service" "compute" {
   service = "compute.googleapis.com"
+}
+
+resource "google_project_iam_member" "cloud_build_editor" {
+  project = var.project_id
+  role    = "roles/cloudbuild.builds.editor"
+  member  = "user:${var.deploy_user_email}"
 }
 
 data "google_project" "project" {}
@@ -291,4 +277,24 @@ output "service_url" {
 output "use_load_balancer" {
   description = "Whether the load balancer is enabled."
   value       = var.use_load_balancer
+}
+
+output "app_url" {
+  description = "The application URL."
+  value       = var.use_load_balancer ? "https://${var.domain_name}" : google_cloud_run_v2_service.default.uri
+}
+
+output "domain_name" {
+  description = "The custom domain name for the application."
+  value       = var.domain_name
+}
+
+output "service_name" {
+  description = "The name of the Cloud Run service."
+  value       = local.service_name
+}
+
+output "location" {
+  description = "The GCP region where the service is deployed."
+  value       = var.gcp_region
 }

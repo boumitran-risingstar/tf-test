@@ -31,73 +31,13 @@ variable "gcp_region" {
   default     = "us-central1"
 }
 
-variable "repository_id" {
-  description = "The ID of the Artifact Registry repository."
-  type        = string
-}
-
-variable "image_name" {
-  description = "The name of the Docker image."
-  type        = string
-}
-
-variable "service_name" {
-  description = "The name of the Cloud Run service."
-  type        = string
-}
-
-variable "neg_name" {
-  description = "The name of the serverless network endpoint group."
-  type        = string
-}
-
-variable "policy_name" {
-  description = "The name of the security policy."
-  type        = string
-}
-
-variable "backend_service_name" {
-  description = "The name of the backend service."
-  type        = string
-}
-
-variable "url_map_name" {
-  description = "The name of the URL map."
-  type        = string
-}
-
-variable "static_ip_name" {
-  description = "The name of the static IP address."
-  type        = string
-}
-
-variable "ssl_certificate_name" {
-  description = "The name of the SSL certificate."
-  type        = string
-}
-
-variable "https_proxy_name" {
-  description = "The name of the HTTPS proxy."
-  type        = string
-}
-
-variable "https_forwarding_rule_name" {
-  description = "The name of the HTTPS forwarding rule."
-  type        = string
-}
-
-variable "http_proxy_name" {
-  description = "The name of the HTTP proxy."
-  type        = string
-}
-
-variable "http_forwarding_rule_name" {
-  description = "The name of the HTTP forwarding rule."
-  type        = string
-}
-
 variable "domain_name" {
   description = "The domain name for the Cloud Run service."
   type        = string
   default     = "mouthmetrics.32studio.org"
+}
+
+variable "deploy_user_email" {
+  description = "The email of the user running the deployment. This user will be granted the Cloud Build Editor role."
+  type        = string
 }
