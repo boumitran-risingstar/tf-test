@@ -72,20 +72,6 @@ resource "google_artifact_registry_repository" "repository" {
   depends_on = [google_project_service.artifactregistry]
 }
 
-resource "null_resource" "build_and_push_image" {
-  provisioner "local-exec" {
-    command = "gcloud builds submit --tag ${var.gcp_region}-docker.pkg.dev/${data.google_project.project.project_id}/${google_artifact_registry_repository.repository.repository_id}/${var.image_name}:latest ../src"
-  }
-
-  depends_on = [google_artifact_registry_repository.repository]
-}
-
-resource "time_sleep" "wait_for_image" {
-  create_duration = "180s"
-
-  depends_on = [null_resource.build_and_push_image]
-}
-
 resource "google_cloud_run_v2_service" "default" {
   deletion_protection = false
   provider = google-beta
@@ -104,8 +90,6 @@ resource "google_cloud_run_v2_service" "default" {
     percent = 100
     type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
   }
-
-  depends_on = [time_sleep.wait_for_image]
 }
 
 # Allow unauthenticated access to the Cloud Run service.
