@@ -66,7 +66,7 @@ data "google_project" "project" {}
 resource "google_artifact_registry_repository" "repository" {
   location      = var.gcp_region
   repository_id = var.repository_id
-  description   = "Repository for the Hello World application."
+  description   = "Repository for the Mouth Metrics application."
   format        = "DOCKER"
 
   depends_on = [google_project_service.artifactregistry]

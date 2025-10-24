@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# This script automates the deployment of the Hello World application.
+# This script automates the deployment of the Mouth Metrics application.
 
 # --- Configuration ---
 

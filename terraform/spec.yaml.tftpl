@@ -1,7 +1,7 @@
 swagger: '2.0'
 info:
-  title: Hello World API
-  description: API for the Hello World service.
+  title: Mouth Metrics API
+  description: API for the Mouth Metrics service.
   version: 1.0.0
 schemes:
   - https
@@ -10,20 +10,8 @@ produces:
 paths:
   /:
     get:
-      summary: Say hello world.
+      summary: Get the homepage.
       operationId: root
-      x-google-backend:
-        address: ${run_service_url}
-        jwt_audience: ${run_service_url}
-      responses:
-        '200':
-          description: A successful response
-          schema:
-            type: string
-  /hello:
-    get:
-      summary: Say hello.
-      operationId: hello
       x-google-backend:
         address: ${run_service_url}
         jwt_audience: ${run_service_url}
