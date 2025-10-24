@@ -36,4 +36,8 @@ gcloud builds submit --tag "$IMAGE_URL" ../src
 echo "Applying Terraform configuration..."
 terraform apply -auto-approve
 
-echo "Deployment completed successfully!"
+# 4. Run Post-Deployment Tests
+echo "Running post-deployment tests..."
+./run-tests.sh
+
+echo "Deployment and all tests completed successfully!"
