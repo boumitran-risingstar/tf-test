@@ -19,11 +19,10 @@ IMAGE_URL="$GCP_REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_ID/$IMAGE_NAME:lat
 
 # --- Deployment Steps ---
 
-# 1. Initialize Terraform
-# This command prepares the Terraform working directory.
-
-echo "Initializing Terraform..."
-terraform init -upgrade
+# 1. Run validation and linting tests
+# This script runs terraform init, validate, and tflint.
+echo "Running validation and linting..."
+./test.sh
 
 # 2. Build and Push the Docker Image
 # This command uses Google Cloud Build to build the Docker image and push it to the Artifact Registry.

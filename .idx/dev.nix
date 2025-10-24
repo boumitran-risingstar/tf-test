@@ -9,6 +9,7 @@
     pkgs.google-cloud-sdk
     pkgs.terraform
     pkgs.docker
+    pkgs.tflint
   ];
   # Sets environment variables in the workspace
   env = {};
