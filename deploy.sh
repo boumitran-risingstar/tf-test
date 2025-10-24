@@ -50,7 +50,7 @@ terraform apply -auto-approve -var="deploy_user_email=$DEPLOY_USER_EMAIL" -var="
 # 5. Run Post-Deployment Tests
 # This script runs a series of tests against the live application.
 echo "Running post-deployment tests..."
-chmod +x run-tests.sh
-./run-tests.sh
+chmod +x test/run-tests.sh
+./test/run-tests.sh
 
 echo "Deployment and all tests completed successfully!"

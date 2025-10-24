@@ -132,7 +132,7 @@ resource "google_compute_security_policy" "canned_policy" {
 
   # Rule for rate limiting
   rule {
-    action   = "throttle"
+    action   = "rate_based_ban"
     priority = 1500
     match {
       versioned_expr = "SRC_IPS_V1"
@@ -144,6 +144,7 @@ resource "google_compute_security_policy" "canned_policy" {
       conform_action = "allow"
       exceed_action  = "deny(429)"
       enforce_on_key = "IP"
+      ban_duration_sec = 600
       rate_limit_threshold {
         count = 100
         interval_sec = 60
