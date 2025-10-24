@@ -65,7 +65,7 @@ data "google_project" "project" {}
 
 resource "google_artifact_registry_repository" "repository" {
   location      = var.gcp_region
-  repository_id = var.repository_id
+  repository_id = local.repository_id
   description   = "Repository for the Mouth Metrics application."
   format        = "DOCKER"
 
@@ -75,14 +75,14 @@ resource "google_artifact_registry_repository" "repository" {
 resource "google_cloud_run_v2_service" "default" {
   deletion_protection = false
   provider = google-beta
-  name     = var.service_name
+  name     = local.service_name
   location = var.gcp_region
 
   ingress = var.use_load_balancer ? "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER" : "INGRESS_TRAFFIC_ALL"
 
   template {
     containers {
-      image = "${var.gcp_region}-docker.pkg.dev/${data.google_project.project.project_id}/${google_artifact_registry_repository.repository.repository_id}/${var.image_name}:latest"
+      image = "${var.gcp_region}-docker.pkg.dev/${data.google_project.project.project_id}/${google_artifact_registry_repository.repository.repository_id}/${local.image_name}:latest"
     }
   }
 
@@ -107,7 +107,7 @@ resource "google_cloud_run_v2_service_iam_member" "invoker" {
 resource "google_compute_region_network_endpoint_group" "serverless_neg" {
   count    = var.use_load_balancer ? 1 : 0
   provider = google-beta
-  name                  = var.neg_name
+  name                  = local.neg_name
   network_endpoint_type = "SERVERLESS"
   region                = var.gcp_region
   cloud_run {
@@ -119,7 +119,7 @@ resource "google_compute_region_network_endpoint_group" "serverless_neg" {
 resource "google_compute_security_policy" "canned_policy" {
   count       = var.use_load_balancer ? 1 : 0
   provider    = google-beta
-  name        = var.policy_name
+  name        = local.policy_name
   description = "Basic WAF and rate limiting policy"
 
   rule {
@@ -183,7 +183,7 @@ resource "google_compute_security_policy" "canned_policy" {
 resource "google_compute_backend_service" "backend_service" {
   count     = var.use_load_balancer ? 1 : 0
   provider  = google-beta
-  name      = var.backend_service_name
+  name      = local.backend_service_name
   protocol  = "HTTP"
   port_name = "http"
   timeout_sec = 30
@@ -203,7 +203,7 @@ resource "google_compute_backend_service" "backend_service" {
 resource "google_compute_url_map" "url_map" {
   count           = var.use_load_balancer ? 1 : 0
   provider        = google-beta
-  name            = var.url_map_name
+  name            = local.url_map_name
   default_service = google_compute_backend_service.backend_service[0].id
 }
 
@@ -212,13 +212,13 @@ resource "google_compute_url_map" "url_map" {
 resource "google_compute_global_address" "static_ip" {
   count    = var.use_load_balancer ? 1 : 0
   provider = google-beta
-  name     = var.static_ip_name
+  name     = local.static_ip_name
 }
 
 resource "google_compute_managed_ssl_certificate" "ssl_certificate" {
   count    = var.use_load_balancer ? 1 : 0
   provider = google-beta
-  name     = var.ssl_certificate_name
+  name     = local.ssl_certificate_name
   managed {
     domains = [var.domain_name]
   }
@@ -227,7 +227,7 @@ resource "google_compute_managed_ssl_certificate" "ssl_certificate" {
 resource "google_compute_target_https_proxy" "https_proxy" {
   count            = var.use_load_balancer ? 1 : 0
   provider         = google-beta
-  name             = var.https_proxy_name
+  name             = local.https_proxy_name
   url_map          = google_compute_url_map.url_map[0].id
   ssl_certificates = [google_compute_managed_ssl_certificate.ssl_certificate[0].id]
 }
@@ -235,7 +235,7 @@ resource "google_compute_target_https_proxy" "https_proxy" {
 resource "google_compute_global_forwarding_rule" "https_forwarding_rule" {
   count      = var.use_load_balancer ? 1 : 0
   provider   = google-beta
-  name       = var.https_forwarding_rule_name
+  name       = local.https_forwarding_rule_name
   target     = google_compute_target_https_proxy.https_proxy[0].id
   port_range = "443"
   ip_address = google_compute_global_address.static_ip[0].address
@@ -244,14 +244,14 @@ resource "google_compute_global_forwarding_rule" "https_forwarding_rule" {
 resource "google_compute_target_http_proxy" "http_proxy" {
   count    = var.use_load_balancer ? 1 : 0
   provider = google-beta
-  name     = var.http_proxy_name
+  name     = local.http_proxy_name
   url_map  = google_compute_url_map.url_map[0].id
 }
 
 resource "google_compute_global_forwarding_rule" "http_forwarding_rule" {
   count      = var.use_load_balancer ? 1 : 0
   provider   = google-beta
-  name       = var.http_forwarding_rule_name
+  name       = local.http_forwarding_rule_name
   target     = google_compute_target_http_proxy.http_proxy[0].id
   port_range = "80"
   ip_address = google_compute_global_address.static_ip[0].address

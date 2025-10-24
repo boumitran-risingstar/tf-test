@@ -1,0 +1,15 @@
+locals {
+  repository_id            = "${var.app_name}-repo"
+  image_name               = "${var.app_name}-image"
+  service_name             = "${var.app_name}-service"
+  neg_name                 = "${var.app_name}-neg"
+  policy_name              = "${var.app_name}-policy"
+  backend_service_name     = "${var.app_name}-backend-service"
+  url_map_name             = "${var.app_name}-url-map"
+  static_ip_name           = "${var.app_name}-static-ip"
+  ssl_certificate_name     = "${var.app_name}-ssl-cert"
+  https_proxy_name         = "${var.app_name}-https-proxy"
+  https_forwarding_rule_name = "${var.app_name}-https-forwarding-rule"
+  http_proxy_name          = "${var.app_name}-http-proxy"
+  http_forwarding_rule_name  = "${var.app_name}-http-forwarding-rule"
+}
