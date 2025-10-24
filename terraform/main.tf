@@ -68,7 +68,7 @@ resource "google_cloud_run_v2_service" "default" {
 
   template {
     containers {
-      image = "${var.gcp_region}-docker.pkg.dev/${data.google_project.project.project_id}/${google_artifact_registry_repository.repository.repository_id}/${local.image_name}:latest"
+      image = "${var.gcp_region}-docker.pkg.dev/${data.google_project.project.project_id}/${google_artifact_registry_repository.repository.repository_id}/${local.image_name}:${var.image_tag}"
     }
   }
 
@@ -297,4 +297,10 @@ output "service_name" {
 output "location" {
   description = "The GCP region where the service is deployed."
   value       = var.gcp_region
+}
+
+variable "image_tag" {
+  description = "The tag to use for the container image."
+  type        = string
+  default     = "latest"
 }
