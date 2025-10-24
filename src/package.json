@@ -1,7 +1,7 @@
 {
-  "name": "hello-world",
+  "name": "mouth-metrics",
   "version": "1.0.0",
-  "description": "Simple Hello World Node.js app",
+  "description": "Mouth Metrics application",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
