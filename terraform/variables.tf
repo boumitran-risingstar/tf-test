@@ -1,7 +1,22 @@
 
+variable "app_name" {
+  description = "The name of the application. Used as a prefix for many resources."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.app_name))
+    error_message = "The app_name must contain only lowercase letters, numbers, and hyphens."
+  }
+}
+
 variable "project_id" {
   description = "The Google Cloud project ID."
   type        = string
+
+  validation {
+    condition     = var.project_id != "your-gcp-project-id" && var.project_id != ""
+    error_message = "A valid project_id must be provided. Please create a terraform.tfvars file and set your project_id. See terraform.tfvars.example for a template."
+  }
 }
 
 variable "use_load_balancer" {
