@@ -39,11 +39,17 @@ sleep 10
 echo "--- Building and Pushing Container Image ---"
 cd ..
 echo "Building and pushing new image..."
-gcloud builds submit . --config=cloudbuild.yaml --substitutions=_TAG=$IMAGE_TAG,_GCR_HOSTNAME=${GCP_REGION}-docker.pkg.dev,_REPO_NAME=$(basename $(terraform -chdir=terraform output -raw repository_id)),_IMAGE_NAME=$APP_NAME
+gcloud builds submit . --config=cloudbuild.yaml --substitutions=_TAG=$IMAGE_TAG,_GCR_HOSTNAME=${GCP_REGION}-docker.pkg.dev,_REPO_NAME=$(terraform -chdir=terraform output -raw repository_id),_IMAGE_NAME=$APP_NAME
 
 # --- Deploying Remaining Infrastructure ---
 echo "--- Deploying Remaining Infrastructure ---"
 cd terraform
+
+# Attempt to import the Identity Platform config to handle cases where it persists after deletion.
+# If it doesn't exist, the command will fail, but '|| true' ensures the script continues.
+echo "Attempting to import existing Identity Platform config..."
+terraform import google_identity_platform_config.default projects/$PROJECT_ID/config || true
+
 echo "Applying all infrastructure..."
 terraform apply -auto-approve
 
