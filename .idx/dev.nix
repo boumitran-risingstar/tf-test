@@ -20,13 +20,16 @@
     extensions = [
       "hashicorp.terraform"
       "google.cloud-code"
+      "dbaeumer.vscode-eslint" # For linting TypeScript and JavaScript
+      "esbenp.prettier-vscode" # For code formatting
     ];
     # Enable previews
     previews = {
       enable = true;
       previews = {
         web = {
-          command = ["npm" "start" "--prefix" "src"];
+          # Use the Vite development server command
+          command = ["npm" "run" "dev" "--prefix" "UI-Service" "--" "--port" "$PORT"];
           manager = "web";
         };
       };
@@ -35,17 +38,10 @@
     workspace = {
       # Runs when a workspace is first created
       onCreate = {
-        npm-install = "npm install --prefix src";
+        npm-install = "npm install --prefix UI-Service";
         # Configure Docker to use gcloud for authentication with Artifact Registry
         configure-docker = "gcloud auth configure-docker us-central1-docker.pkg.dev --quiet";
-        # Open editors for the following files by default, if they exist:
-        default.openFiles = [ "terraform/main.tf" "src/index.js" ];
-      };
-      # Runs when the workspace is (re)started
-      onStart = {
-        start-server = "npm start --prefix src";
       };
     };
   };
 }
-# Trigger reload

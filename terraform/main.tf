@@ -1,9 +1,12 @@
+
 provider "google" {
   project = var.project_id
+  user_project_override = true
 }
 
 provider "google-beta" {
   project = var.project_id
+  user_project_override = true
 }
 
 provider "time" {}
@@ -41,10 +44,58 @@ resource "google_project_service" "compute" {
   service = "compute.googleapis.com"
 }
 
-resource "google_project_iam_member" "cloud_build_editor" {
+resource "google_project_service" "iap" {
+  service = "iap.googleapis.com"
+}
+
+# Permissions for the User running the script
+resource "google_project_iam_member" "cloud_build_editor_user" {
   project = var.project_id
   role    = "roles/cloudbuild.builds.editor"
   member  = "user:${var.deploy_user_email}"
+}
+
+# Permissions for the Service Account
+resource "google_project_iam_member" "service_usage_consumer" {
+  project = var.project_id
+  role    = "roles/serviceusage.serviceUsageConsumer"
+  member  = "serviceAccount:infra-deployer@tf-test-476002.iam.gserviceaccount.com"
+}
+
+resource "google_project_iam_member" "cloud_build_editor_sa" {
+  project = var.project_id
+  role    = "roles/cloudbuild.builds.editor"
+  member  = "serviceAccount:infra-deployer@tf-test-476002.iam.gserviceaccount.com"
+}
+
+resource "google_project_iam_member" "artifact_registry_admin_sa" {
+  project = var.project_id
+  role    = "roles/artifactregistry.admin"
+  member  = "serviceAccount:infra-deployer@tf-test-476002.iam.gserviceaccount.com"
+}
+
+resource "google_project_iam_member" "cloud_run_admin_sa" {
+  project = var.project_id
+  role    = "roles/run.admin"
+  member  = "serviceAccount:infra-deployer@tf-test-476002.iam.gserviceaccount.com"
+}
+
+resource "google_project_iam_member" "storage_admin_sa" {
+  project = var.project_id
+  role    = "roles/storage.admin"
+  member  = "serviceAccount:infra-deployer@tf-test-476002.iam.gserviceaccount.com"
+}
+
+resource "google_project_iam_member" "service_account_user_sa" {
+  project = var.project_id
+  role    = "roles/iam.serviceAccountUser"
+  member  = "serviceAccount:infra-deployer@tf-test-476002.iam.gserviceaccount.com"
+}
+
+resource "google_project_iam_member" "project_iam_admin_sa" {
+  project = var.project_id
+  role    = "roles/resourcemanager.projectIamAdmin"
+  member  = "serviceAccount:infra-deployer@tf-test-476002.iam.gserviceaccount.com"
 }
 
 data "google_project" "project" {}
@@ -58,6 +109,35 @@ resource "google_artifact_registry_repository" "repository" {
   depends_on = [google_project_service.artifactregistry]
 }
 
+resource "google_storage_bucket_iam_member" "cloud_build_storage_admin" {
+  bucket = "${data.google_project.project.project_id}_cloudbuild"
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:infra-deployer@tf-test-476002.iam.gserviceaccount.com"
+}
+
+resource "google_storage_bucket_iam_member" "cloud_build_service_account_storage_admin" {
+  bucket = "${data.google_project.project.project_id}_cloudbuild"
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${data.google_project.project.number}@cloudbuild.gserviceaccount.com"
+}
+
+resource "google_project_service_identity" "cloudbuild" {
+  provider = google-beta
+  project = var.project_id
+  service = "cloudbuild.googleapis.com"
+}
+
+resource "google_service_account" "cloud_run_sa" {
+  account_id   = "${local.service_name}-sa"
+  display_name = "Service Account for ${local.service_name}"
+}
+
+resource "google_project_iam_member" "cloud_run_artifact_registry_reader" {
+  project = var.project_id
+  role    = "roles/artifactregistry.reader"
+  member  = "serviceAccount:${google_service_account.cloud_run_sa.email}"
+}
+
 resource "google_cloud_run_v2_service" "default" {
   deletion_protection = false
   provider = google-beta
@@ -67,8 +147,12 @@ resource "google_cloud_run_v2_service" "default" {
   ingress = var.use_load_balancer ? "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER" : "INGRESS_TRAFFIC_ALL"
 
   template {
+    service_account = google_service_account.cloud_run_sa.email
     containers {
       image = "${var.gcp_region}-docker.pkg.dev/${data.google_project.project.project_id}/${google_artifact_registry_repository.repository.repository_id}/${local.image_name}:${var.image_tag}"
+      ports {
+        container_port = 80
+      }
     }
   }
 
@@ -262,6 +346,22 @@ resource "google_cloud_run_domain_mapping" "default" {
   }
 }
 
+# --- Google OAuth Client ---
+
+resource "google_iap_brand" "project_brand" {
+  provider = google-beta
+  support_email = var.deploy_user_email
+  application_title = var.app_name
+  project = data.google_project.project.project_id
+  depends_on = [google_project_service.iap]
+}
+
+resource "google_iap_client" "project_client" {
+  provider = google-beta
+  display_name = var.app_name
+  brand = google_iap_brand.project_brand.name
+}
+
 
 # --- Outputs --- 
 
@@ -300,8 +400,25 @@ output "location" {
   value       = var.gcp_region
 }
 
+output "google_auth_client_id" {
+  description = "The client ID for Google OAuth."
+  value = google_iap_client.project_client.client_id
+  sensitive = true
+}
+
+output "google_auth_client_secret" {
+  description = "The client secret for Google OAuth."
+  value = google_iap_client.project_client.secret
+  sensitive = true
+}
+
 variable "image_tag" {
   description = "The tag to use for the container image."
   type        = string
   default     = "latest"
+}
+
+output "project_id" {
+  description = "The ID of the GCP project."
+  value       = var.project_id
 }

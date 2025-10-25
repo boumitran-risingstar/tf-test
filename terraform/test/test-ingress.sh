@@ -6,9 +6,11 @@ set -e
 # --- Ingress Test ---
 
 # Get the necessary outputs and variables.
-USE_LOAD_BALANCER=$(terraform output -raw use_load_balancer)
-SERVICE_NAME=$(terraform output -raw service_name)
-LOCATION=$(terraform output -raw location)
+# We need to go up one directory to run terraform commands
+USE_LOAD_BALANCER=$(cd .. && terraform output -raw use_load_balancer)
+SERVICE_NAME=$(cd .. && terraform output -raw service_name)
+LOCATION=$(cd .. && terraform output -raw location)
+PROJECT_ID=$(cd .. && terraform output -raw project_id)
 
 # Determine the expected ingress setting
 if [ "$USE_LOAD_BALANCER" = "true" ]; then
@@ -19,18 +21,23 @@ else
   echo "Load balancer is not enabled. Expecting ingress to be '$EXPECTED_INGRESS'."
 fi
 
-# Get the actual ingress setting from the deployed service
-echo "Checking actual ingress settings for service '$SERVICE_NAME' in '$LOCATION'..."
-ACTUAL_INGRESS=$(gcloud run services describe "$SERVICE_NAME" --region "$LOCATION" --format="value(metadata.annotations['run.googleapis.com/ingress'])" 2>/dev/null || true)
+# Poll for the ingress setting
+MAX_ATTEMPTS=10
+RETRY_DELAY=5 # in seconds
 
-echo "Actual ingress setting is '$ACTUAL_INGRESS'."
+for (( i=1; i<=MAX_ATTEMPTS; i++ )); do
+  echo "Checking actual ingress settings for service '$SERVICE_NAME' in '$LOCATION' (Attempt $i/$MAX_ATTEMPTS)..."
+  ACTUAL_INGRESS=$(gcloud run services describe "$SERVICE_NAME" --region "$LOCATION" --project "$PROJECT_ID" --format="value(metadata.annotations['run.googleapis.com/ingress'])" 2>/dev/null || true)
+  echo "Actual ingress setting is '$ACTUAL_INGRESS'."
 
-# Compare the actual and expected settings
-if [ "$ACTUAL_INGRESS" = "$EXPECTED_INGRESS" ]; then
-  echo "Ingress test PASSED. The ingress setting is correctly configured."
-  exit 0
-else
-  # This is a temporary workaround for a known issue where the ingress annotation is not immediately updated.
-  echo "Ingress test is currently being skipped due to a known issue. This will be fixed in a future update."
-  exit 0
-fi
+  if [ "$ACTUAL_INGRESS" = "$EXPECTED_INGRESS" ]; then
+    echo "Ingress test PASSED. The ingress setting is correctly configured."
+    exit 0
+  fi
+
+  echo "Waiting for $RETRY_DELAY seconds before retrying..."
+  sleep $RETRY_DELAY
+done
+
+echo "Ingress test FAILED. Expected '$EXPECTED_INGRESS' but got '$ACTUAL_INGRESS'."
+exit 1

@@ -1,0 +1,8 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', '${_GCR_HOSTNAME}/${PROJECT_ID}/${_REPO_NAME}/${_IMAGE_NAME}:${_TAG}', '-f', 'UI-Service/Dockerfile', './UI-Service']
+images:
+- '${_GCR_HOSTNAME}/${PROJECT_ID}/${_REPO_NAME}/${_IMAGE_NAME}:${_TAG}'
+options:
+  logging: CLOUD_LOGGING_ONLY
+serviceAccount: 'projects/tf-test-476002/serviceAccounts/infra-deployer@tf-test-476002.iam.gserviceaccount.com'
