@@ -28,8 +28,8 @@
       enable = true;
       previews = {
         web = {
-          # Use the Vite development server command
-          command = ["npm" "run" "dev" "--prefix" "UI-Service" "--" "--port" "$PORT" "--host" "0.0.0.0"];
+          # Use the Next.js development server command
+          command = ["npm" "run" "dev" "--prefix" "auth-ui" "--" "--port" "$PORT"];
           manager = "web";
         };
       };
@@ -38,7 +38,7 @@
     workspace = {
       # Runs when a workspace is first created
       onCreate = {
-        npm-install = "npm install --prefix UI-Service";
+        npm-install = "npm install --prefix auth-ui";
         # Configure Docker to use gcloud for authentication with Artifact Registry
         configure-docker = "gcloud auth configure-docker us-central1-docker.pkg.dev --quiet";
       };

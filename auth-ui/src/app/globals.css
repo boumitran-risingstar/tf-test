@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 255 100% 100%;      /* bg-white */
+    --foreground: 0 0% 20%;           /* text-dark */
+    --card: 0 0% 96%;                 /* bg-light-gray */
+    --card-foreground: 0 0% 20%;      /* text-dark */
+    --popover: 0 0% 96%;              /* bg-light-gray */
+    --popover-foreground: 0 0% 20%;   /* text-dark */
+    --primary: 180 100% 32%;          /* primary-teal */
+    --primary-foreground: 255 100% 100%; /* bg-white */
+    --secondary: 214 53% 23%;         /* secondary-navy */
+    --secondary-foreground: 255 100% 100%; /* bg-white */
+    --muted: 0 0% 96%;                /* bg-light-gray */
+    --muted-foreground: 0 0% 40%;     /* text-subtle */
+    --accent: 76 100% 45%;            /* accent-lime */
+    --accent-foreground: 0 0% 20%;    /* text-dark */
+    --destructive: 36 100% 55%;       /* warning-orange */
+    --destructive-foreground: 255 100% 100%; /* bg-white */
+    --border: 0 0% 93%;               /* border */
+    --input: 0 0% 93%;                /* border */
+    --ring: 76 100% 45%;              /* accent-lime */
+    --radius: 0.5rem;
+    --header: 214 53% 23%;            /* secondary-navy */
+  }
+
+  .dark {
+    /* Define dark theme colors if needed, for now we'll focus on light theme */
+    --background: 214 53% 10%;
+    --foreground: 0 0% 98%;
+    --card: 214 53% 15%;
+    --card-foreground: 0 0% 98%;
+    --header: 214 53% 15%;
+    --popover: 214 53% 15%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 180 100% 40%;
+    --primary-foreground: 214 53% 10%;
+    --secondary: 0 0% 98%;
+    --secondary-foreground: 214 53% 10%;
+    --muted: 214 53% 15%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 76 100% 55%;
+    --accent-foreground: 214 53% 10%;
+    --destructive: 36 100% 65%;
+    --destructive-foreground: 214 53% 10%;
+    --border: 214 53% 25%;
+    --input: 214 53% 25%;
+    --ring: 76 100% 55%;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
