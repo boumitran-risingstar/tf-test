@@ -1,66 +1,79 @@
 #!/bin/bash
+# --- Resilient Deployment Script ---
+# This script automates the deployment of the application's infrastructure
+# in multiple phases to ensure stability and handle dependencies correctly.
 
-# Exit immediately if a command exits with a non-zero status.
-set -e
+set -e # Exit immediately if a command exits with a non-zero status.
 
-# Source the central configuration
-source ./config.sh
+# --- Configuration ---
+# Source the configuration file to get environment variables
+if [ -f "config.sh" ]; then
+  source config.sh
+else
+  echo "Error: Configuration file 'config.sh' not found."
+  exit 1
+fi
 
-# --- Initialize Terraform and Synchronize State ---
-echo "--- Initializing Terraform and Synchronize State ---"
+# --- Pre-flight Checks ---
+echo "--- Running Pre-flight Checks ---"
 cd terraform
-
-# Create a terraform.tfvars file
-echo "Creating terraform.tfvars file..."
-cat <<EOT > terraform.tfvars
-project_id = "$PROJECT_ID"
-app_name = "$APP_NAME"
-domain_name = "$DOMAIN_NAME"
-gcp_region = "$GCP_REGION"
-use_load_balancer = $USE_LOAD_BALANCER
-deploy_user_email = "$DEPLOY_USER_EMAIL"
-image_tag = "$IMAGE_TAG"
-EOT
 
 # Initialize Terraform
 echo "Initializing Terraform..."
 terraform init
 
-# --- Creating Artifact Registry Repository ---
-echo "--- Creating Artifact Registry Repository ---"
-# Apply only the Artifact Registry to prevent chicken-and-egg issues
-terraform apply -target=google_artifact_registry_repository.repository -auto-approve
+# Initialize TFLint
+echo "Initializing TFLint..."
+tflint --init
 
-# Wait for the repository to be fully provisioned
-echo "Waiting 10 seconds for repository to provision..."
-sleep 10
+# Lint the Terraform configuration for best practices
+echo "Linting Terraform configuration with TFLint..."
+tflint
 
-# --- Build and Push Container Image ---
-echo "--- Building and Pushing Container Image ---"
-cd ..
-echo "Building and pushing new image..."
-gcloud builds submit . --config=cloudbuild.yaml --substitutions=_TAG=$IMAGE_TAG,_GCR_HOSTNAME=${GCP_REGION}-docker.pkg.dev,_REPO_NAME=$(terraform -chdir=terraform output -raw repository_id),_IMAGE_NAME=$APP_NAME
+# Validate the Terraform configuration for syntax errors
+echo "Validating Terraform configuration..."
+terraform validate
 
-# --- Deploying Remaining Infrastructure ---
-echo "--- Deploying Remaining Infrastructure ---"
-cd terraform
+# --- Phase 1: Deploy Artifact Registry ---
+echo "--- Phase 1: Deploying Artifact Registry ---"
+# Apply only the Artifact Registry to ensure it exists before we push an image.
+# The resource name is derived from your terraform files (google_artifact_registry_repository.default)
+terraform apply -auto-approve -target=google_artifact_registry_repository.default \
+  -var="project_id=${PROJECT_ID}" \
+  -var="deploy_user_email=${DEPLOY_USER_EMAIL}" \
+  -var="app_name=${APP_NAME}" \
+  -var="service_name=${AUTH_UI_SERVICE_NAME}" \
+  -var="region=${GCP_REGION}"
 
-# Attempt to import existing resources to prevent errors if they already exist.
-# The '|| true' ensures that if the import fails (because the resource doesn't exist yet), the script continues.
-echo "Attempting to import existing resources..."
-terraform import google_identity_platform_config.default projects/$PROJECT_ID/config || true
-terraform import google_identity_platform_default_supported_idp_config.google projects/$PROJECT_ID/defaultSupportedIdpConfigs/google.com || true
-terraform import google_service_account.cloud_run_sa "projects/$PROJECT_ID/serviceAccounts/ui-service-service-sa@$PROJECT_ID.iam.gserviceaccount.com" || true
-# Using the import format that is known to work for this resource.
-terraform import 'google_cloud_run_domain_mapping.default[0]' "$GCP_REGION/$DOMAIN_NAME" || true
+# --- Wait for IAM Propagation ---
+echo "--- Waiting 30 seconds for IAM permissions to propagate... ---"
+sleep 30
 
-echo "Applying all infrastructure..."
-terraform apply -auto-approve
+# --- Phase 2: Build & Push Application Image ---
+echo "--- Phase 2: Building and Pushing Application Image to Artifact Registry ---"
+cd ../auth-ui # Navigate to the application code
 
+IMAGE_URL="${GCP_REGION}-docker.pkg.dev/${PROJECT_ID}/${APP_NAME}/${AUTH_UI_SERVICE_NAME}"
 
-# --- Post-Deployment Actions ---
-echo "--- Running Post-Deployment ---"
-APP_URL=$(terraform output -raw app_url)
-echo "Application URL: $APP_URL"
+# Use Google Cloud Build to build the image and push it to the registry
+gcloud builds submit --tag "${IMAGE_URL}" .
 
-echo "--- Deployment successful! ---"
+cd ../terraform # Return to the terraform directory
+
+# --- Phase 3: Deploy Application Services ---
+echo "--- Phase 3: Deploying Cloud Run and related services ---"
+# Apply the rest of the configuration. Terraform will detect the existing
+# Artifact Registry and create the remaining resources.
+terraform apply -auto-approve \
+  -var="project_id=${PROJECT_ID}" \
+  -var="deploy_user_email=${DEPLOY_USER_EMAIL}" \
+  -var="app_name=${APP_NAME}" \
+  -var="service_name=${AUTH_UI_SERVICE_NAME}" \
+  -var="region=${GCP_REGION}"
+
+# --- Phase 4: Post-Deployment Tests ---
+echo "--- Phase 4: Running Post-Deployment Tests ---"
+# Run the test script to verify the health and functionality of the deployment
+./test/run-tests.sh
+
+echo "--- Deployment and Testing Complete ---"

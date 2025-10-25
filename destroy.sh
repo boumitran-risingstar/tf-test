@@ -13,6 +13,7 @@ project_id = "$PROJECT_ID"
 gcp_region = "$GCP_REGION"
 domain_name = "$DOMAIN_NAME"
 app_name = "$APP_NAME"
+service_name = "$AUTH_UI_SERVICE_NAME"
 deploy_user_email = "$DEPLOY_USER_EMAIL"
 use_load_balancer = $USE_LOAD_BALANCER
 EOL

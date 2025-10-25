@@ -1,8 +1,38 @@
 steps:
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', '${_GCR_HOSTNAME}/${PROJECT_ID}/${_REPO_NAME}/${_IMAGE_NAME}:${_TAG}', '-f', 'UI-Service/Dockerfile', './UI-Service']
-images:
-- '${_GCR_HOSTNAME}/${PROJECT_ID}/${_REPO_NAME}/${_IMAGE_NAME}:${_TAG}'
-options:
-  logging: CLOUD_LOGGING_ONLY
-serviceAccount: 'projects/tf-test-476002/serviceAccounts/infra-deployer@tf-test-476002.iam.gserviceaccount.com'
+  # Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t',
+        '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_APP_NAME}-docker-repo/${_SERVICE_NAME}-image:latest',
+        '.',
+        '-f',
+        'auth-ui/Dockerfile',
+      ]
+    dir: 'auth-ui'
+
+  # Push the Docker image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'push',
+        '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_APP_NAME}-docker-repo/${_SERVICE_NAME}-image:latest',
+      ]
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      [
+        'run',
+        'deploy',
+        '${_SERVICE_NAME}',
+        '--image',
+        '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_APP_NAME}-docker-repo/${_SERVICE_NAME}-image:latest',
+        '--region',
+        '${_REGION}',
+        '--platform',
+        'managed',
+        '--allow-unauthenticated',
+      ]
