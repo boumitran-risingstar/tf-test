@@ -346,22 +346,6 @@ resource "google_cloud_run_domain_mapping" "default" {
   }
 }
 
-# --- Google OAuth Client ---
-
-resource "google_iap_brand" "project_brand" {
-  provider = google-beta
-  support_email = var.deploy_user_email
-  application_title = var.app_name
-  depends_on = [google_project_service.iap]
-}
-
-resource "google_iap_client" "project_client" {
-  provider = google-beta
-  display_name = var.app_name
-  brand = google_iap_brand.project_brand.name
-}
-
-
 # --- Outputs --- 
 
 output "lb_ip_address" {
@@ -401,13 +385,13 @@ output "location" {
 
 output "google_auth_client_id" {
   description = "The client ID for Google OAuth."
-  value = google_iap_client.project_client.client_id
+  value = google_identity_platform_default_supported_idp_config.google.client_id
   sensitive = true
 }
 
 output "google_auth_client_secret" {
   description = "The client secret for Google OAuth."
-  value = google_iap_client.project_client.secret
+  value = google_identity_platform_default_supported_idp_config.google.client_secret
   sensitive = true
 }
 
@@ -420,4 +404,9 @@ variable "image_tag" {
 output "project_id" {
   description = "The ID of the GCP project."
   value       = var.project_id
+}
+
+output "repository_id" {
+  description = "The ID of the Artifact Registry repository."
+  value       = google_artifact_registry_repository.repository.repository_id
 }
