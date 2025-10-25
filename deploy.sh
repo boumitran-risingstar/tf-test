@@ -17,24 +17,9 @@ REPOSITORY_NAME="${APP_NAME}-repo"
 echo "--- Activating Service Account ---"
 gcloud auth activate-service-account --key-file=gcloud-service-key.json
 
-# --- Build and Push Container Image ---
+# --- Terraform Pre-Step: Create Artifact Registry ---
 
-echo "--- Building and Pushing Container Image ---"
-
-# Check if an image with the same tag already exists
-if gcloud artifacts docker images describe \
-  "$GCP_REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_NAME/$IMAGE_NAME:$IMAGE_TAG" \
-  --repository="$REPOSITORY_NAME" \
-  --location="$GCP_REGION" &> /dev/null; then
-  echo "Image with tag $IMAGE_TAG already exists. Skipping build."
-else
-  echo "Building and pushing new image..."
-  gcloud beta builds submit . --config cloudbuild.yaml --substitutions=_GCR_HOSTNAME=$GCP_REGION-docker.pkg.dev,_REPO_NAME=$REPOSITORY_NAME,_IMAGE_NAME=$IMAGE_NAME,_TAG=$IMAGE_TAG
-fi
-
-# --- Deploy Infrastructure ---
-
-echo "--- Deploying Infrastructure ---"
+echo "--- Creating Artifact Registry Repository ---"
 
 # Navigate to the terraform directory
 cd terraform
@@ -53,11 +38,40 @@ EOF
 echo "Initializing Terraform..."
 terraform init
 
-# Validate the Terraform configuration
-echo "Validating Terraform configuration..."
-terraform validate
+# Apply only the Artifact Registry repository
+echo "Applying Artifact Registry repository..."
+terraform apply -auto-approve -target=google_artifact_registry_repository.repository
 
-# Apply all infrastructure
+# Wait for the repository to be ready
+echo "Waiting 10 seconds for repository to provision..."
+sleep 10
+
+# Return to the root directory
+cd ..
+
+# --- Build and Push Container Image ---
+
+echo "--- Building and Pushing Container Image ---"
+
+# Check if an image with the same tag already exists
+if gcloud artifacts docker images describe \
+  "$GCP_REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_NAME/$IMAGE_NAME:$IMAGE_TAG" \
+  --repository="$REPOSITORY_NAME" \
+  --location="$GCP_REGION" &> /dev/null; then
+  echo "Image with tag $IMAGE_TAG already exists. Skipping build."
+else
+  echo "Building and pushing new image..."
+  gcloud beta builds submit . --config cloudbuild.yaml --substitutions=_GCR_HOSTNAME=$GCP_REGION-docker.pkg.dev,_REPO_NAME=$REPOSITORY_NAME,_IMAGE_NAME=$IMAGE_NAME,_TAG=$IMAGE_TAG
+fi
+
+# --- Deploy Infrastructure ---
+
+echo "--- Deploying Remaining Infrastructure ---"
+
+# Navigate back to the terraform directory
+cd terraform
+
+# Apply all infrastructure (this will be idempotent for the repository)
 echo "Applying all infrastructure..."
 terraform apply -auto-approve -var="image_tag=$IMAGE_TAG"
 
@@ -72,7 +86,9 @@ echo "Application URL: $APP_URL"
 echo "Running post-deployment tests..."
 cd ./test
 ./run-tests.sh
-cd ..
+cd .. # back to terraform directory
 
+# Return to root
+cd ..
 
 echo "--- Deployment successful! ---"
