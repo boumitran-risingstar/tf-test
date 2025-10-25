@@ -29,7 +29,7 @@ if gcloud artifacts docker images describe \
   echo "Image with tag $IMAGE_TAG already exists. Skipping build."
 else
   echo "Building and pushing new image..."
-  gcloud builds submit . --config cloudbuild.yaml --substitutions=_GCR_HOSTNAME=$GCP_REGION-docker.pkg.dev,_REPO_NAME=$REPOSITORY_NAME,_IMAGE_NAME=$IMAGE_NAME,_TAG=$IMAGE_TAG
+  gcloud beta builds submit . --config cloudbuild.yaml --substitutions=_GCR_HOSTNAME=$GCP_REGION-docker.pkg.dev,_REPO_NAME=$REPOSITORY_NAME,_IMAGE_NAME=$IMAGE_NAME,_TAG=$IMAGE_TAG
 fi
 
 # --- Deploy Infrastructure ---
@@ -52,6 +52,10 @@ EOF
 # Initialize Terraform
 echo "Initializing Terraform..."
 terraform init
+
+# Validate the Terraform configuration
+echo "Validating Terraform configuration..."
+terraform validate
 
 # Apply all infrastructure
 echo "Applying all infrastructure..."

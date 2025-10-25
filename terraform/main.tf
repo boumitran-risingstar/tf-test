@@ -352,7 +352,6 @@ resource "google_iap_brand" "project_brand" {
   provider = google-beta
   support_email = var.deploy_user_email
   application_title = var.app_name
-  project = data.google_project.project.project_id
   depends_on = [google_project_service.iap]
 }
 
