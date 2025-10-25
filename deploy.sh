@@ -17,9 +17,9 @@ REPOSITORY_NAME="${APP_NAME}-repo"
 echo "--- Activating Service Account ---"
 gcloud auth activate-service-account --key-file=gcloud-service-key.json
 
-# --- Terraform Pre-Step: Create Artifact Registry ---
+# --- Terraform Initialization and State Synchronization ---
 
-echo "--- Creating Artifact Registry Repository ---"
+echo "--- Initializing Terraform and Synchronizing State ---"
 
 # Navigate to the terraform directory
 cd terraform
@@ -38,8 +38,28 @@ EOF
 echo "Initializing Terraform..."
 terraform init
 
+# Attempt to import existing resources to prevent conflicts.
+echo "--- Attempting to import existing resources ---"
+PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
+
+# Temporarily disable exit-on-error for the import commands
+set +e
+
+echo "Importing Identity Platform config (if it exists)..."
+terraform import google_identity_platform_config.default "projects/$PROJECT_ID"
+
+echo "Importing IAP brand (if it exists)..."
+terraform import google_iap_brand.project_brand "projects/$PROJECT_ID/brands/$PROJECT_NUMBER"
+
+# Re-enable exit-on-error
+set -e
+echo "--- Finished importing resources ---"
+
+
+# --- Terraform Pre-Step: Create Artifact Registry ---
+
+echo "--- Creating Artifact Registry Repository ---"
 # Apply only the Artifact Registry repository
-echo "Applying Artifact Registry repository..."
 terraform apply -auto-approve -target=google_artifact_registry_repository.repository
 
 # Wait for the repository to be ready
@@ -71,7 +91,7 @@ echo "--- Deploying Remaining Infrastructure ---"
 # Navigate back to the terraform directory
 cd terraform
 
-# Apply all infrastructure (this will be idempotent for the repository)
+# Apply all infrastructure
 echo "Applying all infrastructure..."
 terraform apply -auto-approve -var="image_tag=$IMAGE_TAG"
 
