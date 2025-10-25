@@ -34,42 +34,51 @@ tflint
 echo "Validating Terraform configuration..."
 terraform validate
 
-# --- Phase 1: Deploy Artifact Registry ---
-echo "--- Phase 1: Deploying Artifact Registry ---"
-# Apply only the Artifact Registry to ensure it exists before we push an image.
-# The resource name is derived from your terraform files (google_artifact_registry_repository.default)
-terraform apply -auto-approve -target=google_artifact_registry_repository.default \
+# --- Phase 1: Deploy Foundational Infrastructure ---
+echo "--- Phase 1: Deploying Artifact Registry, Log Bucket, and IAM ---"
+# Apply the foundational resources, including the log bucket and service account.
+terraform apply -auto-approve \
+  -target=google_artifact_registry_repository.default \
+  -target=google_storage_bucket.cloudbuild_logs \
+  -target=google_storage_bucket_iam_member.cloudbuild_log_writer \
+  -target=google_service_account.cloudbuild \
+  -target=google_project_iam_member.cloud_build_permissions \
+  -target=google_service_account_iam_member.cloudbuild_is_serviceAccountUser_for_cloudrun \
   -var="project_id=${PROJECT_ID}" \
   -var="deploy_user_email=${DEPLOY_USER_EMAIL}" \
   -var="app_name=${APP_NAME}" \
   -var="service_name=${AUTH_UI_SERVICE_NAME}" \
-  -var="region=${GCP_REGION}"
+  -var="region=${GCP_REGION}" \
+  -var="use_load_balancer=${USE_LOAD_BALANCER}"
 
 # --- Wait for IAM Propagation ---
-echo "--- Waiting 30 seconds for IAM permissions to propagate... ---"
-sleep 30
+echo "--- Waiting 10 seconds for IAM permissions to propagate... ---"
+sleep 10
 
 # --- Phase 2: Build & Push Application Image ---
 echo "--- Phase 2: Building and Pushing Application Image to Artifact Registry ---"
 cd ../auth-ui # Navigate to the application code
 
 IMAGE_URL="${GCP_REGION}-docker.pkg.dev/${PROJECT_ID}/${APP_NAME}/${AUTH_UI_SERVICE_NAME}"
+CLOUDBUILD_SA_NAME=$(cd ../terraform && terraform output -raw cloud_build_service_account_name)
+LOG_BUCKET_URI="gs://${PROJECT_ID}-cloudbuild-logs"
 
-# Use Google Cloud Build to build the image and push it to the registry
-gcloud builds submit --tag "${IMAGE_URL}" .
+# Submit the build, sending logs to the dedicated GCS bucket.
+gcloud builds submit --tag "${IMAGE_URL}" --service-account="${CLOUDBUILD_SA_NAME}" --gcs-log-dir="${LOG_BUCKET_URI}" .
 
 cd ../terraform # Return to the terraform directory
 
 # --- Phase 3: Deploy Application Services ---
 echo "--- Phase 3: Deploying Cloud Run and related services ---"
 # Apply the rest of the configuration. Terraform will detect the existing
-# Artifact Registry and create the remaining resources.
+# resources and create the remaining ones.
 terraform apply -auto-approve \
   -var="project_id=${PROJECT_ID}" \
   -var="deploy_user_email=${DEPLOY_USER_EMAIL}" \
   -var="app_name=${APP_NAME}" \
   -var="service_name=${AUTH_UI_SERVICE_NAME}" \
-  -var="region=${GCP_REGION}"
+  -var="region=${GCP_REGION}" \
+  -var="use_load_balancer=${USE_LOAD_BALANCER}"
 
 # --- Phase 4: Post-Deployment Tests ---
 echo "--- Phase 4: Running Post-Deployment Tests ---"

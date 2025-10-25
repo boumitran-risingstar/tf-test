@@ -28,3 +28,9 @@ variable "deploy_user_email" {
   description = "The email of the user deploying the infrastructure."
   type        = string
 }
+
+variable "use_load_balancer" {
+  description = "If true, create a global external load balancer."
+  type        = bool
+  default     = false
+}

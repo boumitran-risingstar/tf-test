@@ -27,17 +27,11 @@ locals {
 
   # --- Service-Specific Resources ---
 
-  # The name of the Docker image for the service.
-  image_name = "${var.service_name}-image"
-
   # The name of the Cloud Run service.
   service_name = var.service_name
 
   # The name of the Network Endpoint Group (NEG) for the service.
   neg_name = "${var.service_name}-neg"
-
-  # The name of the IAP policy for the service.
-  policy_name = "${var.service_name}-policy"
 
   # The name of the backend service for the load balancer.
   backend_service_name = "${var.service_name}-backend-service"
