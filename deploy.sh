@@ -70,6 +70,8 @@ SOURCE_BUCKET_URI="gs://${PROJECT_ID}-cloudbuild-source/source.tgz"
 # Submit the build, sending logs to the dedicated GCS bucket.
 gcloud builds submit --tag "${IMAGE_URL}" --service-account="${CLOUDBUILD_SA_NAME}" --gcs-log-dir="${LOG_BUCKET_URI}" --gcs-source-staging-dir="${SOURCE_BUCKET_URI}" .
 
+sleep 10
+
 cd ../terraform # Return to the terraform directory
 
 # --- Phase 3: Deploy Application Services ---

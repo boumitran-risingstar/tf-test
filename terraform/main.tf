@@ -93,7 +93,7 @@ resource "google_storage_bucket" "cloudbuild_logs" {
 # Grant the Cloud Build service account permission to write to the log bucket
 resource "google_storage_bucket_iam_member" "cloudbuild_log_writer" {
   bucket = google_storage_bucket.cloudbuild_logs.name
-  role   = "roles/storage.objectCreator"
+  role   = "roles/storage.admin"
   member = "serviceAccount:${google_service_account.cloudbuild.email}"
 }
 
