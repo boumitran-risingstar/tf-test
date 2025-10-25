@@ -1,6 +1,6 @@
 locals {
   repository_id            = "${var.app_name}-repo"
-  image_name               = "${var.app_name}-image"
+  image_name               = var.app_name
   service_name             = "${var.app_name}-service"
   neg_name                 = "${var.app_name}-neg"
   policy_name              = "${var.app_name}-policy"

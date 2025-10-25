@@ -6,11 +6,6 @@ set -e
 # Source the central configuration
 source ./config.sh
 
-# --- Authenticate to Google Cloud ---
-# Activating the service account
-echo "--- Activating Service Account ---"
-gcloud auth activate-service-account --key-file=./gcloud-credentials.json
-
 # --- Initialize Terraform and Synchronize State ---
 echo "--- Initializing Terraform and Synchronizing State ---"
 cd terraform

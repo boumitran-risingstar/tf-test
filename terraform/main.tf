@@ -383,18 +383,6 @@ output "location" {
   value       = var.gcp_region
 }
 
-output "google_auth_client_id" {
-  description = "The client ID for Google OAuth."
-  value = google_identity_platform_default_supported_idp_config.google.client_id
-  sensitive = true
-}
-
-output "google_auth_client_secret" {
-  description = "The client secret for Google OAuth."
-  value = google_identity_platform_default_supported_idp_config.google.client_secret
-  sensitive = true
-}
-
 variable "image_tag" {
   description = "The tag to use for the container image."
   type        = string
