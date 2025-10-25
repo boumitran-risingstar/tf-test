@@ -7,7 +7,7 @@ set -e
 source ./config.sh
 
 # --- Initialize Terraform and Synchronize State ---
-echo "--- Initializing Terraform and Synchronizing State ---"
+echo "--- Initializing Terraform and Synchronize State ---"
 cd terraform
 
 # Create a terraform.tfvars file
@@ -45,10 +45,14 @@ gcloud builds submit . --config=cloudbuild.yaml --substitutions=_TAG=$IMAGE_TAG,
 echo "--- Deploying Remaining Infrastructure ---"
 cd terraform
 
-# Attempt to import the Identity Platform config to handle cases where it persists after deletion.
-# If it doesn't exist, the command will fail, but '|| true' ensures the script continues.
-echo "Attempting to import existing Identity Platform config..."
+# Attempt to import existing resources to prevent errors if they already exist.
+# The '|| true' ensures that if the import fails (because the resource doesn't exist yet), the script continues.
+echo "Attempting to import existing resources..."
 terraform import google_identity_platform_config.default projects/$PROJECT_ID/config || true
+terraform import google_identity_platform_default_supported_idp_config.google projects/$PROJECT_ID/defaultSupportedIdpConfigs/google.com || true
+terraform import google_service_account.cloud_run_sa "projects/$PROJECT_ID/serviceAccounts/ui-service-service-sa@$PROJECT_ID.iam.gserviceaccount.com" || true
+# Using the import format that is known to work for this resource.
+terraform import 'google_cloud_run_domain_mapping.default[0]' "$GCP_REGION/$DOMAIN_NAME" || true
 
 echo "Applying all infrastructure..."
 terraform apply -auto-approve

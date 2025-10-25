@@ -29,7 +29,7 @@
       previews = {
         web = {
           # Use the Vite development server command
-          command = ["npm" "run" "dev" "--prefix" "UI-Service" "--" "--port" "$PORT"];
+          command = ["npm" "run" "dev" "--prefix" "UI-Service" "--" "--port" "$PORT" "--host" "0.0.0.0"];
           manager = "web";
         };
       };
