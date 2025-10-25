@@ -53,7 +53,8 @@ resource "google_service_account_iam_member" "service_account_user" {
 resource "google_project_iam_member" "cloud_build_permissions" {
   for_each = toset([
     "roles/run.admin",
-    "roles/artifactregistry.writer"
+    "roles/artifactregistry.writer",
+    "roles/storage.objectViewer"
   ])
   project = var.project_id
   role    = each.key
@@ -93,6 +94,20 @@ resource "google_storage_bucket" "cloudbuild_logs" {
 resource "google_storage_bucket_iam_member" "cloudbuild_log_writer" {
   bucket = google_storage_bucket.cloudbuild_logs.name
   role   = "roles/storage.objectCreator"
+  member = "serviceAccount:${google_service_account.cloudbuild.email}"
+}
+
+# --- Cloud Build Source Bucket ---
+resource "google_storage_bucket" "cloudbuild_source" {
+  name          = "${var.project_id}-cloudbuild-source"
+  location      = var.region
+  force_destroy = true # Optional: Allows deletion of the bucket even if it contains objects
+}
+
+# Grant the Cloud Build service account permission to read and write to the source bucket
+resource "google_storage_bucket_iam_member" "cloudbuild_source_admin" {
+  bucket = google_storage_bucket.cloudbuild_source.name
+  role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${google_service_account.cloudbuild.email}"
 }
 

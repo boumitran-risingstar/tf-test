@@ -41,6 +41,8 @@ terraform apply -auto-approve \
   -target=google_artifact_registry_repository.default \
   -target=google_storage_bucket.cloudbuild_logs \
   -target=google_storage_bucket_iam_member.cloudbuild_log_writer \
+  -target=google_storage_bucket.cloudbuild_source \
+  -target=google_storage_bucket_iam_member.cloudbuild_source_admin \
   -target=google_service_account.cloudbuild \
   -target=google_project_iam_member.cloud_build_permissions \
   -target=google_service_account_iam_member.cloudbuild_is_serviceAccountUser_for_cloudrun \
@@ -62,9 +64,11 @@ cd ../auth-ui # Navigate to the application code
 IMAGE_URL="${GCP_REGION}-docker.pkg.dev/${PROJECT_ID}/${APP_NAME}/${AUTH_UI_SERVICE_NAME}"
 CLOUDBUILD_SA_NAME=$(cd ../terraform && terraform output -raw cloud_build_service_account_name)
 LOG_BUCKET_URI="gs://${PROJECT_ID}-cloudbuild-logs"
+SOURCE_BUCKET_URI="gs://${PROJECT_ID}-cloudbuild-source/source.tgz"
+
 
 # Submit the build, sending logs to the dedicated GCS bucket.
-gcloud builds submit --tag "${IMAGE_URL}" --service-account="${CLOUDBUILD_SA_NAME}" --gcs-log-dir="${LOG_BUCKET_URI}" .
+gcloud builds submit --tag "${IMAGE_URL}" --service-account="${CLOUDBUILD_SA_NAME}" --gcs-log-dir="${LOG_BUCKET_URI}" --gcs-source-staging-dir="${SOURCE_BUCKET_URI}" .
 
 cd ../terraform # Return to the terraform directory
 
