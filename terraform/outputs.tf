@@ -16,12 +16,12 @@ output "service_name" {
 
 output "app_url" {
   description = "The URL of the deployed application"
-  value       = var.use_load_balancer ? "https://${var.domain_name}" : google_cloud_run_v2_service.default.uri
+  value       = var.deploy_cloud_run ? (var.use_load_balancer ? "https://${var.domain_name}" : google_cloud_run_v2_service.default[0].uri) : "N/A"
 }
 
 output "service_url" {
   description = "The direct URL to the Cloud Run service"
-  value       = google_cloud_run_v2_service.default.uri
+  value       = var.deploy_cloud_run ? google_cloud_run_v2_service.default[0].uri : "N/A"
 }
 
 output "cloud_build_service_account_email" {

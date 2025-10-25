@@ -5,11 +5,13 @@
 provider "google" {
   project = var.project_id
   region  = var.region
+  user_project_override = true
 }
 
 provider "google-beta" {
   project = var.project_id
   region  = var.region
+  user_project_override = true
 }
 
 ####################################################################################
@@ -116,9 +118,11 @@ resource "google_storage_bucket_iam_member" "cloudbuild_source_admin" {
 ####################################################################################
 
 resource "google_cloud_run_v2_service" "default" {
+  count    = var.deploy_cloud_run ? 1 : 0
   provider = google-beta
   name     = local.service_name
   location = var.region
+  deletion_protection = false
 
   template {
     service_account = google_service_account.default.email
@@ -137,10 +141,10 @@ resource "google_cloud_run_v2_service" "default" {
 
 # Allow unauthenticated access to the Cloud Run service if not using the load balancer
 resource "google_cloud_run_service_iam_member" "noauth" {
-  count    = var.use_load_balancer ? 0 : 1
-  location = google_cloud_run_v2_service.default.location
-  project  = google_cloud_run_v2_service.default.project
-  service  = google_cloud_run_v2_service.default.name
+  count    = var.deploy_cloud_run && !var.use_load_balancer ? 1 : 0
+  location = google_cloud_run_v2_service.default[0].location
+  project  = google_cloud_run_v2_service.default[0].project
+  service  = google_cloud_run_v2_service.default[0].name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
@@ -152,18 +156,18 @@ resource "google_cloud_run_service_iam_member" "noauth" {
 
 # --- Backend Service & NEG ---
 resource "google_compute_region_network_endpoint_group" "neg" {
-  count                 = var.use_load_balancer ? 1 : 0
+  count                 = var.deploy_cloud_run && var.use_load_balancer ? 1 : 0
   provider              = google-beta
   name                  = local.neg_name
   network_endpoint_type = "SERVERLESS"
   region                = var.region
   cloud_run {
-    service = google_cloud_run_v2_service.default.name
+    service = google_cloud_run_v2_service.default[0].name
   }
 }
 
 resource "google_compute_backend_service" "default" {
-  count                 = var.use_load_balancer ? 1 : 0
+  count                 = var.deploy_cloud_run && var.use_load_balancer ? 1 : 0
   name                  = local.backend_service_name
   protocol              = "HTTP"
   port_name             = "http"
