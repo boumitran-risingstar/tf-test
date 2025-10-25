@@ -20,3 +20,6 @@ export GCP_REGION="us-central1"
 
 # Image Tag
 export IMAGE_TAG="latest"
+
+# Use Load Balancer
+export USE_LOAD_BALANCER="false"
