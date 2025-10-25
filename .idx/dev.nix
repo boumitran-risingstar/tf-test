@@ -29,8 +29,9 @@
       previews = {
         web = {
           # Use the Next.js development server command
-          command = ["npm" "run" "dev" "--prefix" "auth-ui" "--" "--port" "$PORT"];
+          command = ["npm" "run" "dev" "--" "--port" "$PORT"];
           manager = "web";
+          cwd = "auth-ui";
         };
       };
     };
