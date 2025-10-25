@@ -53,8 +53,7 @@ resource "google_service_account_iam_member" "service_account_user" {
 resource "google_project_iam_member" "cloud_build_permissions" {
   for_each = toset([
     "roles/run.admin",
-    "roles/artifactregistry.writer",
-    "roles/storage.objectViewer"
+    "roles/artifactregistry.writer"
   ])
   project = var.project_id
   role    = each.key

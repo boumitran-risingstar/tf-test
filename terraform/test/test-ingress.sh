@@ -6,11 +6,10 @@ set -e
 # --- Ingress Test ---
 
 # Get the necessary outputs and variables.
-# We need to go up one directory to run terraform commands
-USE_LOAD_BALANCER=$(cd .. && terraform output -raw use_load_balancer)
-SERVICE_NAME=$(cd .. && terraform output -raw service_name)
-LOCATION=$(cd .. && terraform output -raw location)
-PROJECT_ID=$(cd .. && terraform output -raw project_id)
+USE_LOAD_BALANCER=$(terraform output -raw use_load_balancer)
+SERVICE_NAME=$(terraform output -raw service_name)
+LOCATION=$(terraform output -raw location)
+PROJECT_ID=$(terraform output -raw project_id)
 
 # Determine the expected ingress setting
 if [ "$USE_LOAD_BALANCER" = "true" ]; then
