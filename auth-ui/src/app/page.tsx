@@ -4,9 +4,10 @@ import { Briefcase, ClipboardList, BarChart3, PenSquare } from "lucide-react";
 import Link from "next/link";
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import { auth } from "@/lib/firebase";
+import { auth } from "@/firebase/config";
 import { useRouter } from 'next/navigation';
 import { Loader } from "@/components/loader";
+import { Parallax, ParallaxProvider } from 'react-scroll-parallax';
 
 export default function HomePage() {
   const [loading, setLoading] = useState(true);
@@ -25,8 +26,10 @@ export default function HomePage() {
   }, [router]);
 
   return (
+    <ParallaxProvider>
       <div className="bg-background text-foreground">
         <main className="flex-1">
+        <Parallax y={[-20, 20]} tag="section">
         <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48">
           <div className="container px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
@@ -48,6 +51,7 @@ export default function HomePage() {
                   </Link>
                 </div>
               </div>
+              <Parallax speed={-10}>
               <div className="h-auto w-full max-w-md mx-auto">
                   <Image
                     src="/hero.svg"
@@ -58,9 +62,12 @@ export default function HomePage() {
                     priority
                   />
               </div>
+              </Parallax>
             </div>
           </div>
         </section>
+        </Parallax>
+        <Parallax y={[-20, 20]} tag="section">
         <section className="w-full py-12 md:py-24 lg:py-32 bg-muted border-t">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
@@ -129,17 +136,21 @@ export default function HomePage() {
                   </CardContent>
                 </Card>
               </div>
-                <Image
-                  src="/key-modules.svg"
-                  width="550"
-                  height="310"
-                  alt="Metrics report illustration"
-                  className="mx-auto overflow-hidden rounded-xl object-contain h-auto w-full lg:order-last"
-                />
+              <Parallax speed={-10}>
+                  <Image
+                    src="/key-modules.svg"
+                    width="550"
+                    height="310"
+                    alt="Metrics report illustration"
+                    className="mx-auto overflow-hidden rounded-xl object-contain h-auto w-full lg:order-last"
+                  />
+                </Parallax>
             </div>
           </div>
         </section>
+        </Parallax>
       </main>
       </div>
+    </ParallaxProvider>
   );
 }
