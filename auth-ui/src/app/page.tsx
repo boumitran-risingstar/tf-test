@@ -2,7 +2,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/card";
 import { Briefcase, ClipboardList, BarChart3, PenSquare } from "lucide-react";
 import Link from "next/link";
-import { Parallax } from 'react-scroll-parallax';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { auth } from "@/lib/firebase";
@@ -27,19 +26,6 @@ export default function HomePage() {
 
   return (
       <div className="bg-background text-foreground">
-        <header className="px-4 lg:px-6 h-14 flex items-center bg-header text-header-foreground">
-          <Link href="#" className="flex items-center justify-center">
-            <span className="font-semibold text-lg">MouthMetrics</span>
-          </Link>
-          <nav className="ml-auto flex gap-4 sm:gap-6">
-            <Link
-              href="/signup"
-              className="inline-flex h-10 items-center justify-center rounded-md bg-secondary text-secondary-foreground px-8 text-sm font-medium shadow transition-colors hover:bg-secondary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-            >
-              {loading ? <Loader /> : 'Get Started'}
-            </Link>
-          </nav>
-        </header>
         <main className="flex-1">
         <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48">
           <div className="container px-4 md:px-6">
@@ -55,7 +41,7 @@ export default function HomePage() {
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
                   <Link
-                    href="/signup"
+                    href="/login"
                     className="inline-flex h-10 items-center justify-center rounded-md bg-accent text-accent-foreground px-8 text-sm font-medium shadow transition-colors hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
                   >
                     {loading ? <Loader /> : 'Get Started'}
@@ -63,15 +49,14 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="h-auto w-full max-w-md mx-auto">
-                <Parallax speed={-15}>
                   <Image
-                    src="/connect.svg"
+                    src="/hero.svg"
                     width="550"
                     height="500"
                     alt="Dental practice connection illustration"
                     className="mx-auto overflow-hidden rounded-xl object-contain h-auto w-full"
+                    priority
                   />
-                </Parallax>
               </div>
             </div>
           </div>
@@ -144,30 +129,17 @@ export default function HomePage() {
                   </CardContent>
                 </Card>
               </div>
-              <Parallax speed={10}>
                 <Image
-                  src="/report.svg"
+                  src="/key-modules.svg"
                   width="550"
                   height="310"
                   alt="Metrics report illustration"
                   className="mx-auto overflow-hidden rounded-xl object-contain h-auto w-full lg:order-last"
                 />
-              </Parallax>
             </div>
           </div>
         </section>
       </main>
-        <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t bg-muted text-muted-foreground">
-          <p className="text-xs">&copy; 2025 MouthMetrics. All rights reserved.</p>
-          <nav className="sm:ml-auto flex gap-4 sm:gap-6">
-            <Link href="#" className="text-xs hover:underline underline-offset-4">
-              Terms of Service
-            </Link>
-            <Link href="#" className="text-xs hover:underline underline-offset-4">
-              Privacy
-            </Link>
-          </nav>
-        </footer>
       </div>
   );
 }

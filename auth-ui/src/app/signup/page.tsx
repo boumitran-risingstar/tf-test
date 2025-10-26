@@ -9,6 +9,7 @@ import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/
 import { auth } from "@/lib/firebase"; 
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -17,7 +18,7 @@ export default function SignupPage() {
 
   const handleSignup = async () => {
     if (!email || !password) {
-      toast.error("Please enter both email and password.");
+      toast.error("Please fill in all fields.");
       return;
     }
 
@@ -45,15 +46,24 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <Card className="mx-auto max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl">Sign Up</CardTitle>
-          <CardDescription>
-            Enter your information to create an account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="w-full lg:grid lg:min-h-[600px] lg:grid-cols-2 xl:min-h-[800px]">
+      <div className="hidden bg-muted lg:block">
+        <Image
+          src="/signup.svg"
+          alt="Image"
+          width="1920"
+          height="1080"
+          className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+        />
+      </div>
+      <div className="flex items-center justify-center py-12">
+        <div className="mx-auto grid w-[350px] gap-6">
+          <div className="grid gap-2 text-center">
+            <h1 className="text-3xl font-bold">Create an account</h1>
+            <p className="text-balance text-muted-foreground">
+              Enter your information to get started
+            </p>
+          </div>
           <div className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
@@ -71,7 +81,7 @@ export default function SignupPage() {
               <Input 
                 id="password" 
                 type="password" 
-                required 
+                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -81,13 +91,13 @@ export default function SignupPage() {
             </Button>
           </div>
           <div className="mt-4 text-center text-sm">
-            Already have an account?{" "}
+            Already have an account?{' '}
             <Link href="/login" className="underline">
               Sign in
             </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

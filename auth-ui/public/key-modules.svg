@@ -1,0 +1,56 @@
+<svg width="550" height="500" viewBox="0 0 550 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow-lg" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="5" dy="5" stdDeviation="10" flood-color="#000" flood-opacity="0.1"/>
+    </filter>
+  </defs>
+  <style>
+    .module-card {
+      transition: all 0.2s ease-in-out;
+    }
+    .module-card:hover {
+      transform: translateY(-5px);
+    }
+  </style>
+
+  <g transform="translate(25, 25)">
+    <!-- Main container for the cards -->
+    <g>
+      <!-- Workflow & Billing -->
+      <g class="module-card" transform="translate(0, 0)">
+        <rect x="0" y="0" width="240" height="200" rx="12" fill="white" style="filter:url(#shadow-lg)"/>
+        <g transform="translate(95, 75) scale(2.5)" stroke-width="1.5" stroke="#38B2AC" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+        </g>
+      </g>
+
+      <!-- Metrics & Reputation -->
+      <g class="module-card" transform="translate(260, 0)">
+        <rect x="0" y="0" width="240" height="200" rx="12" fill="white" style="filter:url(#shadow-lg)"/>
+        <g transform="translate(95, 75) scale(2.5)" stroke-width="1.5" stroke="#38B2AC" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v18h18"/>
+            <path d="m19 9-5 5-4-4-3 3"/>
+        </g>
+      </g>
+
+      <!-- Content & Social Hub -->
+      <g class="module-card" transform="translate(0, 220)">
+        <rect x="0" y="0" width="240" height="200" rx="12" fill="white" style="filter:url(#shadow-lg)"/>
+        <g transform="translate(95, 75) scale(2.5)" stroke-width="1.5" stroke="#38B2AC" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </g>
+      </g>
+
+      <!-- Job & Talent Board -->
+      <g class="module-card" transform="translate(260, 220)">
+        <rect x="0" y="0" width="240" height="200" rx="12" fill="white" style="filter:url(#shadow-lg)"/>
+        <g transform="translate(95, 75) scale(2.5)" stroke-width="1.5" stroke="#38B2AC" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>
