@@ -1,4 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/card";
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy - MouthMetrics',
+  description: 'Read the MouthMetrics privacy policy.',
+};
 
 export default function PrivacyPage() {
   return (

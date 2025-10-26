@@ -10,6 +10,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "MouthMetrics",
   description: "The Unified Dental Practice Hub",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
