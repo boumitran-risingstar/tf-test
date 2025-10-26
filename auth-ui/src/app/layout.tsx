@@ -1,13 +1,11 @@
+'use client';
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
+import { Toaster } from 'react-hot-toast';
+import { ParallaxProvider } from 'react-scroll-parallax';
 
-const outfit = Outfit({ subsets: ["latin"] });
-
-export const metadata: Metadata = {
-  title: "MouthMetrics",
-  description: "The All-in-One Hub for Your Dental Practice",
-};
+const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({
   children,
@@ -16,7 +14,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={outfit.className}>{children}</body>
+      <body className={inter.className}>
+        <ParallaxProvider>
+          <Toaster position="top-center" />
+          {children}
+        </ParallaxProvider>
+      </body>
     </html>
   );
 }

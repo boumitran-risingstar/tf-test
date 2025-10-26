@@ -1,148 +1,173 @@
-import { Button } from "@/components/button";
-import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/card";
-import { ScrollAnimation } from "@/components/scroll-animation";
+'use client';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/card";
+import { Briefcase, ClipboardList, BarChart3, PenSquare } from "lucide-react";
+import Link from "next/link";
+import { Parallax } from 'react-scroll-parallax';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
+import { auth } from "@/lib/firebase";
+import { useRouter } from 'next/navigation';
+import { Loader } from "@/components/loader";
 
-export default function Page() {
+export default function HomePage() {
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      if (user) {
+        router.push('/dashboard');
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
+
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <header className="sticky top-0 z-50 w-full border-b bg-secondary text-secondary-foreground backdrop-blur-sm">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-6">
-            <a href="#" className="flex items-center gap-2">
-              <MountainIcon className="h-6 w-6" />
-              <span className="text-lg font-semibold">MouthMetrics</span>
-            </a>
-            <nav className="hidden md:flex items-center gap-6">
-              <a href="#" className="text-sm font-medium text-secondary-foreground/80 transition-colors hover:text-secondary-foreground">Features</a>
-              <a href="#" className="text-sm font-medium text-secondary-foreground/80 transition-colors hover:text-secondary-foreground">Pricing</a>
-              <a href="#" className="text-sm font-medium text-secondary-foreground/80 transition-colors hover:text-secondary-foreground">Contact</a>
-            </nav>
+      <div className="bg-background text-foreground">
+        <header className="px-4 lg:px-6 h-14 flex items-center bg-header text-header-foreground">
+          <Link href="#" className="flex items-center justify-center">
+            <span className="font-semibold text-lg">MouthMetrics</span>
+          </Link>
+          <nav className="ml-auto flex gap-4 sm:gap-6">
+            <Link
+              href="/signup"
+              className="inline-flex h-10 items-center justify-center rounded-md bg-secondary text-secondary-foreground px-8 text-sm font-medium shadow transition-colors hover:bg-secondary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+            >
+              {loading ? <Loader /> : 'Get Started'}
+            </Link>
+          </nav>
+        </header>
+        <main className="flex-1">
+        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48">
+          <div className="container px-4 md:px-6">
+            <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
+              <div className="flex flex-col justify-center space-y-4">
+                <div className="space-y-2">
+                  <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
+                    MouthMetrics: The Unified Dental Practice Hub
+                  </h1>
+                  <p className="max-w-[600px] text-muted-foreground md:text-xl">
+                    An all-in-one SaaS solution to streamline operations, manage your team, control finances, and build your online brand from a single, data-driven dashboard.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 min-[400px]:flex-row">
+                  <Link
+                    href="/signup"
+                    className="inline-flex h-10 items-center justify-center rounded-md bg-accent text-accent-foreground px-8 text-sm font-medium shadow transition-colors hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                  >
+                    {loading ? <Loader /> : 'Get Started'}
+                  </Link>
+                </div>
+              </div>
+              <div className="h-auto w-full max-w-md mx-auto">
+                <Parallax speed={-15}>
+                  <Image
+                    src="/connect.svg"
+                    width="550"
+                    height="500"
+                    alt="Dental practice connection illustration"
+                    className="mx-auto overflow-hidden rounded-xl object-contain h-auto w-full"
+                  />
+                </Parallax>
+              </div>
+            </div>
           </div>
-          <Button>Get Started</Button>
-        </div>
-      </header>
-      <main className="flex-1">
-        <ScrollAnimation>
-          <section className="py-12 md:py-24 lg:py-32">
-            <div className="container mx-auto px-4 md:px-6 text-center space-y-4">
-              <h1 className="text-4xl md:text-6xl font-bold tracking-tighter text-foreground">The All-in-One Hub for Your Dental Practice</h1>
-              <p className="max-w-3xl mx-auto text-lg md:text-xl text-muted-foreground">From payroll and scheduling to content creation and social media, MouthMetrics unifies your entire practice.</p>
-              <div className="flex justify-center">
-                <Button size="lg">Request a Demo</Button>
+        </section>
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-muted border-t">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <div className="inline-block rounded-lg bg-accent text-accent-foreground px-3 py-1 text-sm">
+                  Key Modules
+                </div>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Solve Fragmentation & High Overhead</h2>
+                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  Dental practices are burdened by administrative fragmentation using 6+ systems. MouthMetrics integrates everything you need, saving time and reducing errors.
+                </p>
               </div>
             </div>
-          </section>
-        </ScrollAnimation>
-        <ScrollAnimation delay={0.15}>
-          <section className="py-12 md:py-24 lg:py-32 bg-muted">
-            <div className="container mx-auto px-4 md:px-6 grid md:grid-cols-3 gap-8">
-              <Card className="bg-background">
-                <CardHeader>
-                  <CardTitle>Unified Listing & Review Management</CardTitle>
-                  <CardDescription>Keep your practice information consistent across Google, Yelp, and Healthgrades. Automatically request patient reviews to build your reputation.</CardDescription>
-                </CardHeader>
-                <CardFooter>
-                  <Button variant="outline">Learn More</Button>
-                </CardFooter>
-              </Card>
-              <Card className="bg-background">
-                <CardHeader>
-                  <CardTitle>Publish Practice News & Offers</CardTitle>
-                  <CardDescription>Announce new staff, share special promotions, and publish articles with our built-in content and review workflow.</CardDescription>
-                </CardHeader>
-                <CardFooter>
-                  <Button variant="outline">Learn More</Button>
-                </CardFooter>
-              </Card>
-              <Card className="bg-background">
-                <CardHeader>
-                  <CardTitle>Integrated Payroll & HR</CardTitle>
-                  <CardDescription>Connect time tracking directly to payroll, manage PTO, and streamline your entire HR process from one central dashboard.</CardDescription>
-                </CardHeader>
-                <CardFooter>
-                  <Button variant="outline">Learn More</Button>
-                </CardFooter>
-              </Card>
-            </div>
-          </section>
-        </ScrollAnimation>
-        <ScrollAnimation delay={0.25}>
-          <section className="py-12 md:py-24 lg:py-32">
-            <div className="container mx-auto px-4 md:px-6 text-center space-y-8">
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">How It Works</h2>
-              <div className="grid md:grid-cols-3 gap-8 text-left">
-                <div className="space-y-2">
-                  <h3 className="text-xl font-semibold">1. Sync Your Data</h3>
-                  <p className="text-muted-foreground">Connect your existing systems to MouthMetrics in minutes. Our platform integrates with your PMS, accounting software, and social media accounts.</p>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-semibold">2. Automate & Manage</h3>
-                  <p className="text-muted-foreground">Let our AI-powered tools handle the repetitive tasks. From payroll to patient reminders, we've got you covered.</p>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-semibold">3. Grow Your Practice</h3>
-                  <p className="text-muted-foreground">Use our insights and publishing tools to attract new patients, create engaging content, and build a thriving practice.</p>
-                </div>
-              </div>
-            </div>
-          </section>
-        </ScrollAnimation>
-        <ScrollAnimation delay={0.35}>
-          <section className="py-12 md:py-24 lg:py-32 bg-muted">
-            <div className="container mx-auto px-4 md:px-6 text-center space-y-8">
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">What Our Customers Say</h2>
-              <div className="grid md:grid-cols-2 gap-8">
-                <Card className="bg-background">
+            <div className="mx-auto grid max-w-5xl items-center gap-6 py-12 lg:grid-cols-2 lg:gap-12">
+              <div className="grid gap-4">
+                <Card>
                   <CardHeader>
-                    <p className="text-muted-foreground">MouthMetrics has been a game-changer for our practice. We've saved countless hours on administrative tasks, and our online presence has never been stronger.</p>
-                    <div className="pt-4">
-                      <p className="font-semibold">Dr. Jane Doe</p>
-                      <p className="text-sm text-muted-foreground">Sunny Smiles Dental</p>
-                    </div>
+                    <CardTitle className="flex items-center">
+                      <ClipboardList className="w-5 h-5 mr-2" />
+                      Workflow & Billing
+                    </CardTitle>
                   </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      Cloud-based scheduling, HIPAA/PCI compliant invoicing, and integrated payroll management to streamline your core operations.
+                    </p>
+                  </CardContent>
                 </Card>
-                <Card className="bg-background">
+                <Card>
                   <CardHeader>
-                    <p className="text-muted-foreground">The integrated payroll and HR features are a lifesaver. I can finally manage my team and finances all in one place.</p>
-                    <div className="pt-4">
-                      <p className="font-semibold">Dr. John Smith</p>
-                      <p className="text-sm text-muted-foreground">Brighton Dental</p>
-                    </div>
+                    <CardTitle className="flex items-center">
+                      <BarChart3 className="w-5 h-5 mr-2" />
+                      Metrics & Reputation
+                    </CardTitle>
                   </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      Automatically sync business listings, manage patient reviews, and publish practice news or special offers with a dedicated tool.
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <PenSquare className="w-5 h-5 mr-2" />
+                      Content & Social Hub
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      Use our AI Content Generator and internal review workflow to create and publish authoritative dental articles and social media posts.
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Briefcase className="w-5 h-5 mr-2" />
+                      Job & Talent Board
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      Find, track, and manage dental-specific roles with our integrated job board and applicant tracking system.
+                    </p>
+                  </CardContent>
                 </Card>
               </div>
+              <Parallax speed={10}>
+                <Image
+                  src="/report.svg"
+                  width="550"
+                  height="310"
+                  alt="Metrics report illustration"
+                  className="mx-auto overflow-hidden rounded-xl object-contain h-auto w-full lg:order-last"
+                />
+              </Parallax>
             </div>
-          </section>
-        </ScrollAnimation>
-        <ScrollAnimation delay={0.45}>
-          <section className="py-12 md:py-24 lg:py-32">
-            <div className="container mx-auto px-4 md:px-6 text-center space-y-4">
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">Ready to Grow Your Practice?</h2>
-              <p className="max-w-xl mx-auto text-lg text-muted-foreground">Request a demo to see how MouthMetrics can help you streamline your operations, attract new patients, and build a thriving practice.</p>
-              <Button size="lg">Request a Demo</Button>
-            </div>
-          </section>
-        </ScrollAnimation>
+          </div>
+        </section>
       </main>
-    </div>
-  );
-}
-
-function MountainIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m8 3 4 8 5-5 5 15H2L8 3z" />
-    </svg>
+        <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t bg-muted text-muted-foreground">
+          <p className="text-xs">&copy; 2025 MouthMetrics. All rights reserved.</p>
+          <nav className="sm:ml-auto flex gap-4 sm:gap-6">
+            <Link href="#" className="text-xs hover:underline underline-offset-4">
+              Terms of Service
+            </Link>
+            <Link href="#" className="text-xs hover:underline underline-offset-4">
+              Privacy
+            </Link>
+          </nav>
+        </footer>
+      </div>
   );
 }

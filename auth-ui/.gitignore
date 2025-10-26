@@ -3,3 +3,4 @@
 
 # Next.js build output
 /.next/
+.env.local
