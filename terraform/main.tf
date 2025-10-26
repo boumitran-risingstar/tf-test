@@ -330,18 +330,3 @@ resource "google_iap_web_backend_service_iam_member" "default" {
   role                 = "roles/iap.httpsIapUser"
   member               = "user:${var.deploy_user_email}" # Example: grant access to the deployer
 }
-
-locals {
-  service_name         = var.service_name
-  users_api_service_name = var.users_api_service_name
-  repository_id        = "${var.app_name}-docker-repo"
-  neg_name             = "${var.service_name}-neg"
-  backend_service_name = "${var.service_name}-backend-service"
-  static_ip_name       = "${var.service_name}-static-ip"
-  ssl_certificate_name = "${var.service_name}-ssl-cert"
-  url_map_name         = "${var.service_name}-url-map"
-  https_proxy_name      = "${var.service_name}-https-proxy"
-  https_forwarding_rule_name = "${var.service_name}-https-forwarding-rule"
-  http_proxy_name      = "${var.service_name}-http-proxy"
-  http_forwarding_rule_name = "${var.service_name}-http-forwarding-rule"
-}
