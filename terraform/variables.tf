@@ -44,3 +44,8 @@ variable "users_api_service_name" {
   description = "The name of the Users API Cloud Run service."
   type        = string
 }
+
+variable "firestore_database_name" {
+    description = "The name of the Firestore database"
+    type        = string
+}

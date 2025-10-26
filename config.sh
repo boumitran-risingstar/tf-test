@@ -22,8 +22,14 @@ export DOMAIN_NAME="mouthmetrics.32studio.org"
 # GCP Region
 export GCP_REGION="us-central1"
 
+# GCP APIs Endpoint
+export GCP_APIS_ENDPOINT="googleapis.com"
+
 # Image Tag
 export IMAGE_TAG="latest"
 
 # Use Load Balancer
 export USE_LOAD_BALANCER="false"
+
+# Firestore Database Name
+export FIRESTORE_DATABASE_NAME="users"

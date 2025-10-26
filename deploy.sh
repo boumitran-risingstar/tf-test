@@ -13,6 +13,15 @@ else
   exit 1
 fi
 
+# --- Argument Parsing ---
+# If no arguments are provided, deploy all services
+if [ "$#" -eq 0 ]; then
+  set -- "auth-ui" "users-api"
+fi
+
+echo "--- Deploying the following services: $@ ---"
+
+
 # Create terraform.tfvars file
 ./create-tfvars.sh
 
@@ -56,37 +65,52 @@ terraform apply -auto-approve -var="deploy_cloud_run=true" -target="google_cloud
 echo "--- Deploying Infrastructure (without Cloud Run) ---"
 terraform apply -auto-approve -var="deploy_cloud_run=false"
 
-# --- Build & Push Application Image ---
-echo "--- Building and Pushing Application Image to Artifact Registry ---"
-cd ../auth-ui # Navigate to the application code
+# --- Build & Push Images ---
+for service in "$@"
+do
+  if [ "$service" = "auth-ui" ]; then
+    echo "--- Building and Pushing Application Image to Artifact Registry ---"
+    cd ../auth-ui # Navigate to the application code
 
-REPOSITORY_ID=$(cd ../terraform && terraform output -raw repository_id)
-IMAGE_URL="${GCP_REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY_ID}/${AUTH_UI_SERVICE_NAME}"
-CLOUDBUILD_SA_NAME=$(cd ../terraform && terraform output -raw cloud_build_service_account_name)
-LOG_BUCKET_URI="gs://${PROJECT_ID}-cloudbuild-logs"
-SOURCE_BUCKET_URI="gs://${PROJECT_ID}-cloudbuild-source/source.tgz"
+    REPOSITORY_ID=$(cd ../terraform && terraform output -raw repository_id)
+    IMAGE_URL="${GCP_REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY_ID}/${AUTH_UI_SERVICE_NAME}"
+    CLOUDBUILD_SA_NAME=$(cd ../terraform && terraform output -raw cloud_build_service_account_name)
+    LOG_BUCKET_URI="gs://${PROJECT_ID}-cloudbuild-logs"
+    SOURCE_BUCKET_URI="gs://${PROJECT_ID}-cloudbuild-source/source.tgz"
 
-# Submit the build
-gcloud builds submit --tag "${IMAGE_URL}" --service-account="${CLOUDBUILD_SA_NAME}" --gcs-log-dir="${LOG_BUCKET_URI}" --gcs-source-staging-dir="${SOURCE_BUCKET_URI}" .
+    # Submit the build
+    gcloud builds submit --tag "${IMAGE_URL}" --service-account="${CLOUDBUILD_SA_NAME}" --gcs-log-dir="${LOG_BUCKET_URI}" --gcs-source-staging-dir="${SOURCE_BUCKET_URI}" .
 
-sleep 10
+    sleep 10
 
-# --- Build & Push Users API Image ---
-echo "--- Building and Pushing Users API Image to Artifact Registry ---"
-cd ../users-api # Navigate to the application code
+  elif [ "$service" = "users-api" ]; then
+    echo "--- Building and Pushing Users API Image to Artifact Registry ---"
+    cd ../users-api # Navigate to the application code
 
-IMAGE_URL="${GCP_REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY_ID}/${USERS_API_SERVICE_NAME}"
+    REPOSITORY_ID=$(cd ../terraform && terraform output -raw repository_id)
+    IMAGE_URL="${GCP_REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY_ID}/${USERS_API_SERVICE_NAME}"
+    CLOUDBUILD_SA_NAME=$(cd ../terraform && terraform output -raw cloud_build_service_account_name)
+    LOG_BUCKET_URI="gs://${PROJECT_ID}-cloudbuild-logs"
+    SOURCE_BUCKET_URI="gs://${PROJECT_ID}-cloudbuild-source/source.tgz"
 
-# Submit the build
-gcloud builds submit --tag "${IMAGE_URL}" --service-account="${CLOUDBUILD_SA_NAME}" --gcs-log-dir="${LOG_BUCKET_URI}" --gcs-source-staging-dir="${SOURCE_BUCKET_URI}" .
+    # Submit the build
+    gcloud builds submit --tag "${IMAGE_URL}" --service-account="${CLOUDBUILD_SA_NAME}" --gcs-log-dir="${LOG_BUCKET_URI}" --gcs-source-staging-dir="${SOURCE_BUCKET_URI}" .
 
-sleep 10
+    sleep 10
+  else
+    echo "Invalid service: $service. Available services: auth-ui, users-api"
+    exit 1
+  fi
+done
+
 
 cd ../terraform # Return to the terraform directory
 
 # --- Deploy Cloud Run Service ---
 echo "--- Deploying Cloud Run Service ---"
-terraform apply -auto-approve -var="deploy_cloud_run=true"
+# Terraform will automatically detect which image has been updated and only
+# deploy the service with the new image.
+terraform apply -auto-approve -var="deploy_cloud_run=true" -var "firestore_database_name=${FIRESTORE_DATABASE_NAME}"
 
 # --- Post-Deployment Tests ---
 echo "--- Running Post-Deployment Tests ---"

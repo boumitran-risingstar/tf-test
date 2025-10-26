@@ -19,6 +19,7 @@ users_api_service_name = "${USERS_API_SERVICE_NAME}"
 region              = "${GCP_REGION}"
 use_load_balancer   = ${USE_LOAD_BALANCER}
 domain_name         = "${DOMAIN_NAME}"
+firestore_database_name = "${FIRESTORE_DATABASE_NAME}"
 EOF
 
 echo "terraform.tfvars file created successfully."
