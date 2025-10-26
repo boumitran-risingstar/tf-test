@@ -17,6 +17,7 @@ app_name            = "${APP_NAME}"
 service_name        = "${AUTH_UI_SERVICE_NAME}"
 region              = "${GCP_REGION}"
 use_load_balancer   = ${USE_LOAD_BALANCER}
+domain_name         = "${DOMAIN_NAME}"
 EOF
 
 echo "terraform.tfvars file created successfully."

@@ -154,6 +154,9 @@ resource "google_cloud_run_domain_mapping" "default" {
   count    = var.deploy_cloud_run && !var.use_load_balancer && var.domain_name != "" ? 1 : 0
   location = var.region
   name     = var.domain_name
+  metadata {
+    namespace = var.project_id
+  }
   spec {
     route_name = google_cloud_run_v2_service.default[0].name
   }
