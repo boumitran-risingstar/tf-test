@@ -149,6 +149,16 @@ resource "google_cloud_run_service_iam_member" "noauth" {
   member   = "allUsers"
 }
 
+# --- Domain Mapping ---
+resource "google_cloud_run_domain_mapping" "default" {
+  count    = var.deploy_cloud_run && !var.use_load_balancer && var.domain_name != "" ? 1 : 0
+  location = var.region
+  name     = var.domain_name
+  spec {
+    route_name = google_cloud_run_v2_service.default[0].name
+  }
+}
+
 
 ####################################################################################
 # Global External Load Balancer
@@ -187,7 +197,7 @@ resource "google_compute_managed_ssl_certificate" "default" {
   count   = var.use_load_balancer ? 1 : 0
   name    = local.ssl_certificate_name
   managed {
-    domains = ["example.com"] # IMPORTANT: Replace with your actual domain
+    domains = [var.domain_name]
   }
 }
 
