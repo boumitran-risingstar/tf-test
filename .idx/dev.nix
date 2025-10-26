@@ -39,9 +39,12 @@
     workspace = {
       # Runs when a workspace is first created
       onCreate = {
-        npm-install = "npm install --prefix auth-ui";
         # Configure Docker to use gcloud for authentication with Artifact Registry
         configure-docker = "gcloud auth configure-docker us-central1-docker.pkg.dev --quiet";
+      };
+      # Runs every time the workspace is (re)started
+      onStart = {
+        npm-install = "npm install --prefix auth-ui";
       };
     };
   };
