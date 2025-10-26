@@ -15,6 +15,7 @@ project_id          = "${PROJECT_ID}"
 deploy_user_email   = "${DEPLOY_USER_EMAIL}"
 app_name            = "${APP_NAME}"
 service_name        = "${AUTH_UI_SERVICE_NAME}"
+users_api_service_name = "${USERS_API_SERVICE_NAME}"
 region              = "${GCP_REGION}"
 use_load_balancer   = ${USE_LOAD_BALANCER}
 domain_name         = "${DOMAIN_NAME}"

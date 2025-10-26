@@ -71,6 +71,17 @@ gcloud builds submit --tag "${IMAGE_URL}" --service-account="${CLOUDBUILD_SA_NAM
 
 sleep 10
 
+# --- Build & Push Users API Image ---
+echo "--- Building and Pushing Users API Image to Artifact Registry ---"
+cd ../users-api # Navigate to the application code
+
+IMAGE_URL="${GCP_REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY_ID}/${USERS_API_SERVICE_NAME}"
+
+# Submit the build
+gcloud builds submit --tag "${IMAGE_URL}" --service-account="${CLOUDBUILD_SA_NAME}" --gcs-log-dir="${LOG_BUCKET_URI}" --gcs-source-staging-dir="${SOURCE_BUCKET_URI}" .
+
+sleep 10
+
 cd ../terraform # Return to the terraform directory
 
 # --- Deploy Cloud Run Service ---

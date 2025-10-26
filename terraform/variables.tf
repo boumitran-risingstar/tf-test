@@ -39,3 +39,8 @@ variable "domain_name" {
   description = "The domain name for the application."
   type        = string
 }
+
+variable "users_api_service_name" {
+  description = "The name of the Users API Cloud Run service."
+  type        = string
+}

@@ -1,0 +1,159 @@
+
+openapi: 3.0.0
+info:
+  title: Users API
+  description: A simple API to manage user data
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /users:
+    put:
+      summary: Create a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewUser'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '200':
+          description: User already exists
+        '400':
+          description: Invalid request body
+        '500':
+          description: Internal server error
+
+  /users/{uid}:
+    get:
+      summary: Get a user by UID
+      parameters:
+        - name: uid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: UID is required
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+    patch:
+      summary: Update a user
+      parameters:
+        - name: uid
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUser'
+      responses:
+        '200':
+          description: User updated successfully
+        '400':
+          description: Invalid request body or UID
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+    delete:
+      summary: Delete a user
+      parameters:
+        - name: uid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User deleted successfully
+        '400':
+          description: UID is required
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+
+  /users/slug/{slugURL}:
+    get:
+      summary: Get a user by slug
+      parameters:
+        - name: slugURL
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: slugURL is required
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    NewUser:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Jane Doe
+        email:
+          type: string
+          example: jane.doe@example.com
+        uid:
+          type: string
+          example: abc-123
+    UpdateUser:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Jane Doe
+        qualification:
+          type: string
+          example: M.Sc. Computer Science
+        profession:
+          type: string
+          example: Software Engineer
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: abc-123
+        name:
+          type: string
+          example: Jane Doe
+        email:
+          type: string
+          example: jane.doe@example.com
+        slugURL:
+          type: string
+          example: jane-doe

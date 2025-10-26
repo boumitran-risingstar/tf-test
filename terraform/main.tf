@@ -38,6 +38,12 @@ resource "google_service_account" "default" {
   display_name = "Auth UI Service Account"
 }
 
+# --- Service Account for Users API ---
+resource "google_service_account" "users_api" {
+  account_id   = "users-api-sa"
+  display_name = "Users API Service Account"
+}
+
 # --- Service Account for Cloud Build ---
 resource "google_service_account" "cloudbuild" {
   account_id   = "cloud-build-sa"
@@ -47,6 +53,13 @@ resource "google_service_account" "cloudbuild" {
 # Grant the deployer user the ability to act as the Cloud Run service account
 resource "google_service_account_iam_member" "service_account_user" {
   service_account_id = google_service_account.default.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "user:${var.deploy_user_email}"
+}
+
+# Grant the deployer user the ability to act as the Users API service account
+resource "google_service_account_iam_member" "users_api_service_account_user" {
+  service_account_id = google_service_account.users_api.name
   role               = "roles/iam.serviceAccountUser"
   member             = "user:${var.deploy_user_email}"
 }
@@ -65,6 +78,13 @@ resource "google_project_iam_member" "cloud_build_permissions" {
 # Grant the Cloud Build service account the ability to act as the Cloud Run service account
 resource "google_service_account_iam_member" "cloudbuild_is_serviceAccountUser_for_cloudrun" {
   service_account_id = google_service_account.default.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.cloudbuild.email}"
+}
+
+# Grant the Cloud Build service account the ability to act as the Users API service account
+resource "google_service_account_iam_member" "cloudbuild_is_serviceAccountUser_for_users_api" {
+  service_account_id = google_service_account.users_api.name
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:${google_service_account.cloudbuild.email}"
 }
@@ -160,6 +180,48 @@ resource "google_cloud_run_domain_mapping" "default" {
   spec {
     route_name = google_cloud_run_v2_service.default[0].name
   }
+}
+
+resource "google_cloud_run_v2_service" "users_api" {
+  count    = var.deploy_cloud_run ? 1 : 0
+  provider = google-beta
+  name     = var.users_api_service_name
+  location = var.region
+  deletion_protection = false
+
+  template {
+    service_account = google_service_account.users_api.email
+    containers {
+      image = "us-central1-docker.pkg.dev/${var.project_id}/${local.repository_id}/${var.users_api_service_name}:latest"
+    }
+    # Use a Serverless NEG for the load balancer integration or allow all traffic
+    annotations = {
+      "run.googleapis.com/ingress" = "internal"
+    }
+  }
+  depends_on = [
+    google_project_service.project
+  ]
+}
+
+# Allow authenticated access to the Cloud Run service
+resource "google_cloud_run_service_iam_member" "users_api_auth" {
+  count    = var.deploy_cloud_run ? 1 : 0
+  location = google_cloud_run_v2_service.users_api[0].location
+  project  = google_cloud_run_v2_service.users_api[0].project
+  service  = google_cloud_run_v2_service.users_api[0].name
+  role     = "roles/run.invoker"
+  member   = "user:${var.deploy_user_email}"
+}
+
+# Allow auth-ui to invoke users-api
+resource "google_cloud_run_service_iam_member" "auth_ui_invokes_users_api" {
+  count    = var.deploy_cloud_run ? 1 : 0
+  location = google_cloud_run_v2_service.users_api[0].location
+  project  = google_cloud_run_v2_service.users_api[0].project
+  service  = google_cloud_run_v2_service.users_api[0].name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.default.email}"
 }
 
 
@@ -267,4 +329,19 @@ resource "google_iap_web_backend_service_iam_member" "default" {
   web_backend_service  = google_compute_backend_service.default[0].name
   role                 = "roles/iap.httpsIapUser"
   member               = "user:${var.deploy_user_email}" # Example: grant access to the deployer
+}
+
+locals {
+  service_name         = var.service_name
+  users_api_service_name = var.users_api_service_name
+  repository_id        = "${var.app_name}-docker-repo"
+  neg_name             = "${var.service_name}-neg"
+  backend_service_name = "${var.service_name}-backend-service"
+  static_ip_name       = "${var.service_name}-static-ip"
+  ssl_certificate_name = "${var.service_name}-ssl-cert"
+  url_map_name         = "${var.service_name}-url-map"
+  https_proxy_name      = "${var.service_name}-https-proxy"
+  https_forwarding_rule_name = "${var.service_name}-https-forwarding-rule"
+  http_proxy_name      = "${var.service_name}-http-proxy"
+  http_forwarding_rule_name = "${var.service_name}-http-forwarding-rule"
 }

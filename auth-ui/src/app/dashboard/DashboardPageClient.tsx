@@ -28,6 +28,21 @@ export default function DashboardPageClient() {
     window.location.href = '/login';
   };
 
+  const handleApiCall = async () => {
+    try {
+      const res = await fetch('/api/users');
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(`API Response: ${JSON.stringify(data)}`);
+      } else {
+        toast.error(`API Error: ${res.statusText}`);
+      }
+    } catch (error) {
+      console.error('Failed to call API', error);
+      toast.error('Failed to call API');
+    }
+  };
+
   if (!user) {
     return <div>Loading...</div>;
   }
@@ -39,6 +54,7 @@ export default function DashboardPageClient() {
           <h1 className="text-3xl font-bold">Welcome to Your Dashboard</h1>
           <p className="text-gray-500">You are logged in as {user.email}</p>
         </div>
+        <Button onClick={handleApiCall} className="w-full">Call API</Button>
         <Button onClick={handleLogout} className="w-full">Logout</Button>
       </div>
     </div>

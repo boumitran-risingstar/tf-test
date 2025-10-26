@@ -14,6 +14,7 @@ export APP_NAME="mouth-metrics"
 
 # Service Name
 export AUTH_UI_SERVICE_NAME="auth-ui"
+export USERS_API_SERVICE_NAME="users-api"
 
 # Domain Name
 export DOMAIN_NAME="mouthmetrics.32studio.org"
