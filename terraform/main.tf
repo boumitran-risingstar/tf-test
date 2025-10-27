@@ -27,7 +27,9 @@ resource "google_project_service" "project" {
     "cloudbuild.googleapis.com",
     "iam.googleapis.com",
     "iap.googleapis.com",
-    "compute.googleapis.com"
+    "compute.googleapis.com",
+    "secretmanager.googleapis.com",
+    "firebase.googleapis.com"
   ])
   service = each.key
 }
@@ -87,6 +89,42 @@ resource "google_service_account_iam_member" "cloudbuild_is_serviceAccountUser_f
   service_account_id = google_service_account.users_api.name
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:${google_service_account.cloudbuild.email}"
+}
+
+####################################################################################
+# Service Account Key & Secret Manager
+####################################################################################
+
+resource "google_service_account_key" "auth_ui_sa_key" {
+  service_account_id = google_service_account.default.name
+}
+
+resource "google_secret_manager_secret" "firebase_service_account_key" {
+  secret_id = "firebase-service-account-key"
+  replication {
+    user_managed {
+      replicas {
+        location = var.region
+      }
+    }
+  }
+}
+
+resource "google_secret_manager_secret_version" "firebase_service_account_key_version" {
+  secret      = google_secret_manager_secret.firebase_service_account_key.id
+  secret_data = google_service_account_key.auth_ui_sa_key.private_key
+}
+
+resource "google_secret_manager_secret_iam_member" "firebase_sa_key_accessor" {
+  secret_id = google_secret_manager_secret.firebase_service_account_key.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.default.email}"
+}
+
+resource "google_project_iam_member" "firebase_admin_role" {
+  project = var.project_id
+  role    = "roles/firebase.admin"
+  member  = "serviceAccount:${google_service_account.default.email}"
 }
 
 
@@ -155,6 +193,10 @@ resource "google_cloud_run_v2_service" "default" {
       env {
         name  = "DEPLOY_TIMESTAMP"
         value = var.deploy_timestamp
+      }
+      env {
+        name  = "FIREBASE_SERVICE_ACCOUNT_KEY"
+        value = google_secret_manager_secret_version.firebase_service_account_key_version.secret_data
       }
     }
     # Use a Serverless NEG for the load balancer integration or allow all traffic

@@ -11,7 +11,9 @@ export const getAdminApp = (): App => {
     throw new Error('Missing FIREBASE_SERVICE_ACCOUNT_KEY environment variable.');
   }
 
+  const decodedServiceAccount = Buffer.from(serviceAccount, 'base64').toString('utf-8');
+
   return admin.initializeApp({
-    credential: admin.credential.cert(JSON.parse(serviceAccount)),
+    credential: admin.credential.cert(JSON.parse(decodedServiceAccount)),
   });
 };
