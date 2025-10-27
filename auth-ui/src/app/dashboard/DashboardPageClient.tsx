@@ -52,14 +52,18 @@ export default function DashboardPageClient() {
           toast.success('User profile created successfully!');
           console.log('Created user:', newUser);
         } else {
-          toast.error(`Failed to create user: ${createRes.statusText}`);
+          const errorData = await createRes.json();
+          const message = errorData.message || createRes.statusText;
+          toast.error(`Failed to create user: ${message}`);
         }
       } else if (res.ok) {
         const userData = await res.json();
         console.log('User data:', userData);
         toast.success('User data retrieved successfully!');
       } else {
-        toast.error(`Failed to retrieve user data: ${res.statusText}`);
+        const errorData = await res.json();
+        const message = errorData.message || res.statusText;
+        toast.error(`Failed to retrieve user data: ${message}`);
       }
     } catch (error) {
       console.error('Failed to sync user', error);

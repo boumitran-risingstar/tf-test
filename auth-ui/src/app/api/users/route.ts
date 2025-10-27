@@ -1,53 +1,55 @@
-import { NextResponse } from 'next/server';
+
+import { NextRequest, NextResponse } from 'next/server';
+import { admin } from '@/lib/firebaseAdmin';
 import { GoogleAuth } from 'google-auth-library';
-import { getAuth } from 'firebase-admin/auth';
-import { getAdminApp } from '@/firebase/admin-config';
 
-async function getUserIdToken(uid: string) {
-  const customToken = await getAuth(getAdminApp()).createCustomToken(uid);
-  const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        token: customToken,
-        returnSecureToken: true
-      })
-    });
+const usersApiUrl = process.env.NEXT_PUBLIC_USERS_API_URL;
 
-  const data = await res.json();
-  return data.idToken;
-}
-
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const auth = new GoogleAuth({
-      scopes: 'https://www.googleapis.com/auth/cloud-platform',
-    });
+    const idToken = req.headers.get('Authorization')?.split('Bearer ')[1];
+    if (!idToken) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
 
-    const { user } = await request.json();
-    const idToken = await getUserIdToken(user.uid);
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const { uid, email, displayName } = await req.json();
 
-    const client = await auth.getIdTokenClient(process.env.USERS_API_URL || '');
-    const res = await client.request({
-      url: `${process.env.USERS_API_URL}/api/users`,
+    if (decodedToken.uid !== uid) {
+      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    }
+
+    if (!usersApiUrl) {
+      throw new Error("NEXT_PUBLIC_USERS_API_URL is not defined");
+    }
+
+    // Initialize Google Auth client
+    const auth = new GoogleAuth();
+    
+    // Fetch the identity token
+    const client = await auth.getIdTokenClient(usersApiUrl);
+    
+    // Get the actual token
+    const clientHeaders = await client.getRequestHeaders();
+
+    const res = await fetch(`${usersApiUrl}/api/users`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${idToken}`
+        Authorization: clientHeaders['Authorization'],
       },
-      data: {
-        name: user.displayName || 'Anonymous',
-        email: user.email,
-        uid: user.uid
-      }
+      body: JSON.stringify({
+        uid,
+        email,
+        name: displayName,
+      }),
     });
 
-    return NextResponse.json(res.data, { status: res.status });
+    const data = await res.json();
+
+    return NextResponse.json(data, { status: res.status });
   } catch (error) {
-    console.error('Failed to call users-api', error);
-    return NextResponse.json({ message: 'Failed to call users-api' }, { status: 500 });
+    console.error('Error creating user:', error);
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }

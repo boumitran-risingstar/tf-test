@@ -51,7 +51,7 @@ app.post('/api/users', authMiddleware, async (req, res) => {
   // Validate the request body
   const { error, value } = createUserSchema.validate(req.body);
   if (error) {
-    return res.status(400).send(error.details[0].message);
+    return res.status(400).send({ message: error.details[0].message });
   }
 
   const { name, email, uid } = value;
@@ -62,7 +62,7 @@ app.post('/api/users', authMiddleware, async (req, res) => {
     const userDoc = await userRef.get();
 
     if (userDoc.exists) {
-      return res.status(200).send('Document already exists.');
+      return res.status(200).send({ message: 'Document already exists.'});
     }
 
     const baseSlug = slugify(name, { lower: true, strict: true });
@@ -93,7 +93,7 @@ app.post('/api/users', authMiddleware, async (req, res) => {
     return res.status(201).send({ id: uid, name, email, slugURL });
   } catch (error) {
     console.error('Error creating user:', error);
-    return res.status(500).send('Error creating user');
+    return res.status(500).send({ message: 'Error creating user' });
   }
 });
 
@@ -102,18 +102,18 @@ app.get('/api/users/:uid', authMiddleware, async (req, res) => {
   const { uid } = req.params;
 
   if (!uid) {
-    return res.status(400).send('UID is required');
+    return res.status(400).send({ message: 'UID is required' });
   }
 
   try {
     const userDoc = await firestore.collection('users').doc(uid).get();
     if (!userDoc.exists) {
-      return res.status(404).send('User not found');
+      return res.status(404).send({ message: 'User not found' });
     }
     res.status(200).send({ id: userDoc.id, ...userDoc.data() });
   } catch (error) {
     console.error('Error reading user:', error);
-    return res.status(500).send('Error reading user');
+    return res.status(500).send({ message: 'Error reading user' });
   }
 });
 
@@ -124,11 +124,11 @@ app.patch('/api/users/:uid', authMiddleware, async (req, res) => {
     // Validate the request body
     const { error, value } = updateUserSchema.validate(req.body);
     if (error) {
-        return res.status(400).send(error.details[0].message);
+        return res.status(400).send({ message: error.details[0].message });
     }
 
   if (!uid) {
-    return res.status(400).send('UID is required');
+    return res.status(400).send({ message: 'UID is required' });
   }
 
   try {
@@ -136,14 +136,14 @@ app.patch('/api/users/:uid', authMiddleware, async (req, res) => {
     const userDoc = await userRef.get();
 
     if (!userDoc.exists) {
-      return res.status(404).send('User not found');
+      return res.status(404).send({ message: 'User not found' });
     }
 
     await userRef.update(value); // Use the validated value object
-    res.status(200).send('User updated');
+    res.status(200).send({ message: 'User updated' });
   } catch (error) {
     console.error('Error updating user:', error);
-    res.status(500).send('Error updating user');
+    res.status(500).send({ message: 'Error updating user' });
   }
 });
 
@@ -152,7 +152,7 @@ app.delete('/api/users/:uid', authMiddleware, async (req, res) => {
     const { uid } = req.params;
 
   if (!uid) {
-    return res.status(400).send('UID is required');
+    return res.status(400).send({ message: 'UID is required' });
   }
 
   try {
@@ -160,14 +160,14 @@ app.delete('/api/users/:uid', authMiddleware, async (req, res) => {
     const userDoc = await userRef.get();
 
     if (!userDoc.exists) {
-      return res.status(404).send('User not found');
+      return res.status(404).send({ message: 'User not found' });
     }
 
     await userRef.delete();
-    res.status(200).send('User deleted');
+    res.status(200).send({ message: 'User deleted' });
   } catch (error) {
     console.error('Error deleting user:', error);
-    res.status(500).send('Error deleting user');
+    res.status(500).send({ message: 'Error deleting user' });
   }
 });
 
@@ -176,7 +176,7 @@ app.get('/api/users/slug/:slugURL', async (req, res) => {
     const { slugURL } = req.params;
 
     if (!slugURL) {
-      return res.status(400).send('slugURL is required');
+      return res.status(400).send({ message: 'slugURL is required' });
     }
 
     try {
@@ -184,14 +184,14 @@ app.get('/api/users/slug/:slugURL', async (req, res) => {
       const snapshot = await usersRef.where('slugURL', '==', slugURL).get();
 
       if (snapshot.empty) {
-        return res.status(404).send('User not found');
+        return res.status(404).send({ message: 'User not found' });
       }
 
       const user = snapshot.docs[0];
       res.status(200).send({ id: user.id, ...user.data() });
     } catch (error) {
       console.error('Error getting user by slugURL:', error);
-      return res.status(500).send('Error getting user by slugURL');
+      return res.status(500).send({ message: 'Error getting user by slugURL' });
     }
   });
 

@@ -30,7 +30,7 @@ export async function GET(req: NextRequest, { params }: { params: { uid: string 
     // Get the actual token
     const clientHeaders = await client.getRequestHeaders();
     
-    const res = await fetch(`${usersApiUrl}/users/${params.uid}`, {
+    const res = await fetch(`${usersApiUrl}/api/users/${params.uid}`, {
         headers: {
             Authorization: clientHeaders['Authorization'],
         },
