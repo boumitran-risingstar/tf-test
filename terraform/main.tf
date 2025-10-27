@@ -187,7 +187,7 @@ resource "google_cloud_run_v2_service" "default" {
     containers {
       image = "us-central1-docker.pkg.dev/${var.project_id}/${local.repository_id}/${local.service_name}:latest"
       env {
-        name  = "USERS_API_URL"
+        name  = "NEXT_PUBLIC_USERS_API_URL"
         value = google_cloud_run_v2_service.users_api[0].uri
       }
       env {

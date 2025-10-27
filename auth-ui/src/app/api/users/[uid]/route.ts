@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { admin } from '@/lib/firebaseAdmin';
+import { GoogleAuth } from 'google-auth-library';
 
 const usersApiUrl = process.env.NEXT_PUBLIC_USERS_API_URL;
 
@@ -16,7 +17,21 @@ export async function GET(req: NextRequest, { params }: { params: { uid: string 
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
-    const res = await fetch(`${usersApiUrl}/users/${params.uid}`);
+    // Initialize Google Auth client
+    const auth = new GoogleAuth();
+    
+    // Fetch the identity token
+    const client = await auth.getIdTokenClient(usersApiUrl);
+    
+    // Get the actual token
+    const clientHeaders = await client.getRequestHeaders();
+    
+    const res = await fetch(`${usersApiUrl}/users/${params.uid}`, {
+        headers: {
+            Authorization: clientHeaders['Authorization'],
+        },
+    });
+
     const data = await res.json();
 
     return NextResponse.json(data, { status: res.status });

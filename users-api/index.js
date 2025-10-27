@@ -16,7 +16,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(cors());
+app.use(cors()); // Enable CORS for all routes
 app.use(express.json());
 
 const openapiSpec = fs.readFileSync(path.join(__dirname, 'openapi.yaml'), 'utf8');
