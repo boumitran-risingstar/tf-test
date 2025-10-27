@@ -1,19 +1,20 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/firebase/config';
-import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { Button } from '@/components/button';
 import toast from 'react-hot-toast';
 
 export default function DashboardPageClient() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser(user);
+        syncUser(user); // Call syncUser when user is authenticated
       } else {
         window.location.href = '/login';
       }
@@ -22,31 +23,57 @@ export default function DashboardPageClient() {
     return () => unsubscribe();
   }, [router]);
 
-  const handleLogout = async () => {
-    await auth.signOut();
-    toast.success('Logged out successfully!');
-    window.location.href = '/login';
-  };
-
-  const handleApiCall = async () => {
+  const syncUser = async (user: User) => {
     try {
-      const res = await fetch('/api/users', {
-        method: 'POST',
+      const idToken = await user.getIdToken();
+      const res = await fetch(`/api/users/${user.uid}`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ user }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        toast.success(`API Response: ${JSON.stringify(data)}`);
+
+      if (res.status === 404) {
+        // User not found, so create them
+        const createRes = await fetch('/api/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+          }),
+        });
+
+        if (createRes.ok) {
+          const newUser = await createRes.json();
+          toast.success('User profile created successfully!');
+          console.log('Created user:', newUser);
+        } else {
+          toast.error(`Failed to create user: ${createRes.statusText}`);
+        }
+      } else if (res.ok) {
+        const userData = await res.json();
+        console.log('User data:', userData);
+        toast.success('User data retrieved successfully!');
       } else {
-        toast.error(`API Error: ${res.statusText}`);
+        toast.error(`Failed to retrieve user data: ${res.statusText}`);
       }
     } catch (error) {
-      console.error('Failed to call API', error);
-      toast.error('Failed to call API');
+      console.error('Failed to sync user', error);
+      toast.error('Failed to sync user');
     }
+  };
+
+
+  const handleLogout = async () => {
+    if (auth.currentUser) {
+        await auth.signOut();
+    }
+    toast.success('Logged out successfully!');
+    window.location.href = '/login';
   };
 
   if (!user) {
@@ -60,7 +87,6 @@ export default function DashboardPageClient() {
           <h1 className="text-3xl font-bold">Welcome to Your Dashboard</h1>
           <p className="text-gray-500">You are logged in as {user.email}</p>
         </div>
-        <Button onClick={handleApiCall} className="w-full">Call API</Button>
         <Button onClick={handleLogout} className="w-full">Logout</Button>
       </div>
     </div>
