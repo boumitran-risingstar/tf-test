@@ -17,6 +17,10 @@ export async function GET(req: NextRequest, { params }: { params: { uid: string 
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
+    if (!usersApiUrl) {
+        throw new Error("NEXT_PUBLIC_USERS_API_URL is not defined");
+    }
+
     // Initialize Google Auth client
     const auth = new GoogleAuth();
     
