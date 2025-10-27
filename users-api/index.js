@@ -8,7 +8,7 @@ const cors = require('cors');
 const authMiddleware = require('./auth-middleware');
 
 const app = express();
-const firestore = new Firestore();
+const firestore = new Firestore({ databaseId: 'users' });
 const port = process.env.PORT || 8080;
 
 app.use((req, res, next) => {
@@ -191,7 +191,7 @@ app.get('/api/users/slug/:slugURL', async (req, res) => {
       res.status(200).send({ id: user.id, ...user.data() });
     } catch (error) {
       console.error('Error getting user by slugURL:', error);
-      res.status(500).send('Error getting user by slugURL');
+      return res.status(500).send('Error getting user by slugURL');
     }
   });
 
@@ -203,5 +203,5 @@ if (require.main === module) {
   });
 }
 
-// Export the app for testing
+// Export the for testing
 module.exports = app;
