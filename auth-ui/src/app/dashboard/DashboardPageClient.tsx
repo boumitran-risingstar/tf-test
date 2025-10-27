@@ -49,7 +49,6 @@ export default function DashboardPageClient() {
 
         if (createRes.ok) {
           const newUser = await createRes.json();
-          toast.success('User profile created successfully!');
           console.log('Created user:', newUser);
         } else {
           const errorData = await createRes.json();
@@ -59,7 +58,6 @@ export default function DashboardPageClient() {
       } else if (res.ok) {
         const userData = await res.json();
         console.log('User data:', userData);
-        toast.success('User data retrieved successfully!');
       } else {
         const errorData = await res.json();
         const message = errorData.message || res.statusText;
@@ -76,7 +74,6 @@ export default function DashboardPageClient() {
     if (auth.currentUser) {
         await auth.signOut();
     }
-    toast.success('Logged out successfully!');
     window.location.href = '/login';
   };
 

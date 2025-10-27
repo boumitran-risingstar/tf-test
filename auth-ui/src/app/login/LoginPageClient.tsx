@@ -37,7 +37,6 @@ export default function LoginPageClient() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       if (userCredential.user.emailVerified) {
-        toast.success('Login successful!');
         router.push('/dashboard');
       } else {
         setUnverifiedUser(userCredential.user);
