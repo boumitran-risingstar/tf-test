@@ -33,6 +33,11 @@
           manager = "web";
           cwd = "auth-ui";
         };
+        users-api = {
+          command = ["npm" "start"];
+          manager = "web";
+          cwd = "users-api";
+        };
       };
     };
     # Workspace lifecycle hooks
@@ -44,7 +49,8 @@
       };
       # Runs every time the workspace is (re)started
       onStart = {
-        npm-install = "npm install --prefix auth-ui";
+        install-auth-ui = "npm install --prefix auth-ui";
+        install-users-api = "npm install --prefix users-api";
       };
     };
   };

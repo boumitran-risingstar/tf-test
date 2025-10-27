@@ -148,6 +148,10 @@ resource "google_cloud_run_v2_service" "default" {
     service_account = google_service_account.default.email
     containers {
       image = "us-central1-docker.pkg.dev/${var.project_id}/${local.repository_id}/${local.service_name}:latest"
+      env {
+        name  = "USERS_API_URL"
+        value = google_cloud_run_v2_service.users_api[0].uri
+      }
     }
     # Use a Serverless NEG for the load balancer integration or allow all traffic
     annotations = {
@@ -209,7 +213,7 @@ resource "google_cloud_run_service_iam_member" "users_api_auth" {
   count    = var.deploy_cloud_run ? 1 : 0
   location = google_cloud_run_v2_service.users_api[0].location
   project  = google_cloud_run_v2_service.users_api[0].project
-  service  = google_cloud_run_v2_service.users_api[0].name
+  service  = google_cloud_run_v2_.users_api[0].name
   role     = "roles/run.invoker"
   member   = "user:${var.deploy_user_email}"
 }

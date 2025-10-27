@@ -57,14 +57,6 @@ tflint
 echo "Validating Terraform configuration..."
 terraform validate
 
-# --- Pre-deploy step: Disable deletion protection on Cloud Run ---
-echo "--- Disabling deletion protection on Cloud Run service ---"
-terraform apply -auto-approve -var="deploy_cloud_run=true" -target="google_cloud_run_v2_service.default[0]"
-
-# --- Deploy Infrastructure (without Cloud Run) ---
-echo "--- Deploying Infrastructure (without Cloud Run) ---"
-terraform apply -auto-approve -var="deploy_cloud_run=false"
-
 # --- Build & Push Images ---
 for service in "$@"
 do
@@ -106,8 +98,8 @@ done
 
 cd ../terraform # Return to the terraform directory
 
-# --- Deploy Cloud Run Service ---
-echo "--- Deploying Cloud Run Service ---"
+# --- Deploy Infrastructure ---
+echo "--- Deploying Infrastructure ---"
 # Terraform will automatically detect which image has been updated and only
 # deploy the service with the new image.
 terraform apply -auto-approve -var="deploy_cloud_run=true" -var "firestore_database_name=${FIRESTORE_DATABASE_NAME}"
