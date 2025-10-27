@@ -1,3 +1,4 @@
+
 variable "deploy_cloud_run" {
   description = "A boolean flag to control the creation of the Cloud Run service."
   type        = bool
@@ -48,4 +49,10 @@ variable "users_api_service_name" {
 variable "firestore_database_name" {
     description = "The name of the Firestore database"
     type        = string
+}
+
+variable "deploy_timestamp" {
+  description = "A timestamp to force a new revision to be created"
+  type        = string
+  default     = ""
 }

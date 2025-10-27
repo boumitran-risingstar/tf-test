@@ -102,7 +102,7 @@ cd ../terraform # Return to the terraform directory
 echo "--- Deploying Infrastructure ---"
 # Terraform will automatically detect which image has been updated and only
 # deploy the service with the new image.
-terraform apply -auto-approve -var="deploy_cloud_run=true" -var "firestore_database_name=${FIRESTORE_DATABASE_NAME}"
+terraform apply -auto-approve -var="deploy_cloud_run=true" -var "firestore_database_name=${FIRESTORE_DATABASE_NAME}" -var="deploy_timestamp=$(date +%s)"
 
 # --- Post-Deployment Tests ---
 echo "--- Running Post-Deployment Tests ---"

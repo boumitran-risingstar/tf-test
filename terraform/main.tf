@@ -152,6 +152,10 @@ resource "google_cloud_run_v2_service" "default" {
         name  = "USERS_API_URL"
         value = google_cloud_run_v2_service.users_api[0].uri
       }
+      env {
+        name  = "DEPLOY_TIMESTAMP"
+        value = var.deploy_timestamp
+      }
     }
     # Use a Serverless NEG for the load balancer integration or allow all traffic
     annotations = {
@@ -197,6 +201,10 @@ resource "google_cloud_run_v2_service" "users_api" {
     service_account = google_service_account.users_api.email
     containers {
       image = "us-central1-docker.pkg.dev/${var.project_id}/${local.repository_id}/${var.users_api_service_name}:latest"
+      env {
+        name  = "DEPLOY_TIMESTAMP"
+        value = var.deploy_timestamp
+      }
     }
     # Use a Serverless NEG for the load balancer integration or allow all traffic
     annotations = {
