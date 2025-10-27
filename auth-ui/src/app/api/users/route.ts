@@ -32,6 +32,8 @@ export async function POST(req: NextRequest) {
     // Get the actual token
     const clientHeaders = await client.getRequestHeaders();
 
+    const name = displayName || email.split('@')[0];
+
     const res = await fetch(`${usersApiUrl}/api/users`, {
       method: 'POST',
       headers: {
@@ -41,7 +43,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         uid,
         email,
-        name: displayName,
+        name: name,
       }),
     });
 
