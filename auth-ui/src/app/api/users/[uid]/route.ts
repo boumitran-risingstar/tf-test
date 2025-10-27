@@ -4,6 +4,7 @@ import { admin } from '@/lib/firebaseAdmin';
 import { GoogleAuth } from 'google-auth-library';
 
 const usersApiUrl = process.env.NEXT_PUBLIC_USERS_API_URL;
+const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
 export async function GET(req: NextRequest, { params }: { params: { uid: string } }) {
   try {
@@ -21,8 +22,10 @@ export async function GET(req: NextRequest, { params }: { params: { uid: string 
         throw new Error("NEXT_PUBLIC_USERS_API_URL is not defined");
     }
 
-    // Initialize Google Auth client
-    const auth = new GoogleAuth();
+    // Initialize Google Auth client with explicit credentials
+    const auth = new GoogleAuth({
+      credentials: JSON.parse(Buffer.from(serviceAccountKey, 'base64').toString('utf-8')),
+    });
     
     // Fetch the identity token
     const client = await auth.getIdTokenClient(usersApiUrl);

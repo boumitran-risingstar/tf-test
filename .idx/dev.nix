@@ -3,9 +3,7 @@
 { pkgs, config, ... }:
 let
   # Create a credentials file for the service account
-  google-creds-file = pkgs.writeText "google-creds.json" (
-    pkgs.lib.trivial.base64Decode config.env.FIREBASE_SERVICE_ACCOUNT_KEY
-  );
+  google-creds-file = "";
 in
 {
   # Which nixpkgs channel to use.
@@ -42,7 +40,7 @@ in
           # Use the Next.js development server command
           command = ["npm" "run" "dev" "--" "--port" "$PORT"];
           env = {
-            NEXT_PUBLIC_USERS_API_URL = "http://users-api:8080";
+            NEXT_PUBLIC_USERS_API_URL = "http://localhost:8080";
           };
           manager = "web";
           cwd = "auth-ui";
@@ -52,8 +50,6 @@ in
           manager = "web";
           cwd = "users-api";
           env = {
-            # Point to the generated credentials file
-            GOOGLE_APPLICATION_CREDENTIALS = "${google-creds-file}";
             # Ensure the API listens on the correct port
             PORT = "8080";
           };
