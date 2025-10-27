@@ -20,7 +20,6 @@ async function authMiddleware(req, res, next) {
     console.log('Verifying ID token...');
     const ticket = await client.verifyIdToken({
       idToken,
-      audience: process.env.USERS_API_URL, // The URL of this service
     });
     const payload = ticket.getPayload();
 

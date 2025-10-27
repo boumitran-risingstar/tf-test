@@ -30,7 +30,13 @@ export default function DashboardPageClient() {
 
   const handleApiCall = async () => {
     try {
-      const res = await fetch('/api/users');
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user }),
+      });
       if (res.ok) {
         const data = await res.json();
         toast.success(`API Response: ${JSON.stringify(data)}`);

@@ -11,18 +11,23 @@ const app = express();
 const firestore = new Firestore();
 const port = process.env.PORT || 8080;
 
+app.use((req, res, next) => {
+  console.log(`Incoming request: ${req.method} ${req.url}`);
+  next();
+});
+
 app.use(cors());
 app.use(express.json());
 
 const openapiSpec = fs.readFileSync(path.join(__dirname, 'openapi.yaml'), 'utf8');
 
 app.get('/', (req, res) => {
-  res.setHeader('Content-Type', 'text/yaml');
-  res.send(openapiSpec);
+  res.status(200).send({ message: 'Welcome to the users-api' });
 });
 
 app.get('/openapi.yaml', (req, res) => {
-    res.download(path.join(__dirname, 'openapi.yaml'));
+    res.setHeader('Content-Type', 'text/yaml');
+    res.send(openapiSpec);
 });
 
 // --- Joi Validation Schemas ---
@@ -40,10 +45,9 @@ const updateUserSchema = Joi.object({
 }).or('name', 'qualification', 'profession'); // Ensures at least one field is provided
 
 // --- CRUD Operations ---
-app.use(authMiddleware);
 
 // Create
-app.put('/users', async (req, res) => {
+app.post('/api/users', authMiddleware, async (req, res) => {
   // Validate the request body
   const { error, value } = createUserSchema.validate(req.body);
   if (error) {
@@ -94,7 +98,7 @@ app.put('/users', async (req, res) => {
 });
 
 // Read
-app.get('/users/:uid', async (req, res) => {
+app.get('/api/users/:uid', authMiddleware, async (req, res) => {
   const { uid } = req.params;
 
   if (!uid) {
@@ -109,12 +113,12 @@ app.get('/users/:uid', async (req, res) => {
     res.status(200).send({ id: userDoc.id, ...userDoc.data() });
   } catch (error) {
     console.error('Error reading user:', error);
-    res.status(500).send('Error reading user');
+    return res.status(500).send('Error reading user');
   }
 });
 
 // Update
-app.patch('/users/:uid', async (req, res) => {
+app.patch('/api/users/:uid', authMiddleware, async (req, res) => {
     const { uid } = req.params;
     
     // Validate the request body
@@ -144,7 +148,7 @@ app.patch('/users/:uid', async (req, res) => {
 });
 
 // Delete
-app.delete('/users/:uid', async (req, res) => {
+app.delete('/api/users/:uid', authMiddleware, async (req, res) => {
     const { uid } = req.params;
 
   if (!uid) {
@@ -168,7 +172,7 @@ app.delete('/users/:uid', async (req, res) => {
 });
 
 // Get user by slug
-app.get('/users/slug/:slugURL', async (req, res) => {
+app.get('/api/users/slug/:slugURL', async (req, res) => {
     const { slugURL } = req.params;
 
     if (!slugURL) {

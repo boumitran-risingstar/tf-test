@@ -213,7 +213,7 @@ resource "google_cloud_run_service_iam_member" "users_api_auth" {
   count    = var.deploy_cloud_run ? 1 : 0
   location = google_cloud_run_v2_service.users_api[0].location
   project  = google_cloud_run_v2_service.users_api[0].project
-  service  = google_cloud_run_v2_.users_api[0].name
+  service  = google_cloud_run_v2_service.users_api[0].name
   role     = "roles/run.invoker"
   member   = "user:${var.deploy_user_email}"
 }
