@@ -97,8 +97,8 @@ if [ "$NO_IMPORT" = false ]; then
     # Import the Cloud Run services themselves
     import_if_missing "google_cloud_run_v2_service.default[0]" "projects/$PROJECT_ID/locations/$GCP_REGION/services/${AUTH_UI_SERVICE_NAME}"
     import_if_missing "google_cloud_run_v2_service.users_api[0]" "projects/$PROJECT_ID/locations/$GCP_REGION/services/${USERS_API_SERVICE_NAME}"
-    if [ -n "$CUSTOM_DOMAIN" ]; then
-      import_if_missing "google_cloud_run_domain_mapping.default[0]" "projects/$PROJECT_ID/locations/$GCP_REGION/domainmappings/$CUSTOM_DOMAIN"
+    if [ -n "$DOMAIN_NAME" ]; then
+      import_if_missing "google_cloud_run_domain_mapping.default[0]" "locations/$GCP_REGION/namespaces/$PROJECT_ID/domainmappings/$DOMAIN_NAME"
     fi
 fi
 
