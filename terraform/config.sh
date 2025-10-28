@@ -5,6 +5,7 @@
 
 # GCP Project ID
 export PROJECT_ID="tf-test-476002"
+export KMS_PROJECT_ID="tf-test-476002"
 
 # Deploy User Email
 export DEPLOY_USER_EMAIL="boumitran@32studio.org"

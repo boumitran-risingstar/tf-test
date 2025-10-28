@@ -29,7 +29,8 @@ resource "google_project_service" "project" {
     "iap.googleapis.com",
     "compute.googleapis.com",
     "secretmanager.googleapis.com",
-    "firebase.googleapis.com"
+    "firebase.googleapis.com",
+    "cloudkms.googleapis.com" # Added Cloud KMS API
   ])
   service = each.key
 }
@@ -230,6 +231,9 @@ resource "google_cloud_run_domain_mapping" "default" {
   spec {
     route_name = google_cloud_run_v2_service.default[0].name
   }
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "google_cloud_run_v2_service" "users_api" {
@@ -383,4 +387,45 @@ resource "google_iap_web_backend_service_iam_member" "default" {
   web_backend_service  = google_compute_backend_service.default[0].name
   role                 = "roles/iap.httpsIapUser"
   member               = "user:${var.deploy_user_email}" # Example: grant access to the deployer
+}
+
+####################################################################################
+# KMS for Firestore CMEK
+####################################################################################
+
+resource "google_kms_key_ring" "firestore_key_ring" {
+  name     = "${var.app_name}-firestore-keyring"
+  location = var.region
+  project  = var.kms_project_id # Using kms_project_id
+  depends_on = [
+    google_project_service.project["cloudkms.googleapis.com"]
+  ]
+}
+
+resource "google_kms_crypto_key" "firestore_cmek_key" {
+  name            = "${var.app_name}-firestore-cmek-key"
+  key_ring        = google_kms_key_ring.firestore_key_ring.id
+  rotation_period = "100000s" # Example: 100 days
+  project         = var.kms_project_id # Using kms_project_id
+
+  version_template {
+    algorithm = "GOOGLE_SYMMETRIC_ENCRYPTION"
+  }
+
+  depends_on = [
+    google_kms_key_ring.firestore_key_ring
+  ]
+}
+
+# Grant the Firestore Service Agent the KMS CryptoKey Encrypter/Decrypter role
+resource "google_project_iam_member" "firestore_cmek_binding" {
+  project = var.kms_project_id # Binding applied in KMS project
+  role    = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member  = "serviceAccount:service-${
+    var.project_id}
+@gcp-sa-firestore.iam.gserviceaccount.com"
+  depends_on = [
+    google_kms_crypto_key.firestore_cmek_key,
+    google_project_service.project["firestore.googleapis.com"]
+  ]
 }

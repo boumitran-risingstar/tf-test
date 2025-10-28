@@ -20,6 +20,7 @@ region              = "${GCP_REGION}"
 use_load_balancer   = ${USE_LOAD_BALANCER}
 domain_name         = "${DOMAIN_NAME}"
 firestore_database_name = "${FIRESTORE_DATABASE_NAME}"
+kms_project_id      = "${KMS_PROJECT_ID}"
 EOF
 
 echo "terraform.tfvars file created successfully."
