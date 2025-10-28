@@ -5,7 +5,12 @@
 
 # GCP Project ID
 export PROJECT_ID="tf-test-476002"
-export KMS_PROJECT_ID="tf-test-476002"
+
+# --- Customer-Managed Encryption Keys (CMEK) for Firestore ---
+# IMPORTANT: If your organization enforces the 'constraints/gcp.restrictCmekCryptoKeyProjects'
+# policy, KMS_PROJECT_ID MUST be a different project ID from PROJECT_ID.
+# Leave as an empty string to disable CMEK and use Google-managed keys.
+export KMS_PROJECT_ID="kms-key-476506"
 
 # Deploy User Email
 export DEPLOY_USER_EMAIL="boumitran@32studio.org"
@@ -33,4 +38,6 @@ export IMAGE_TAG="latest"
 export USE_LOAD_BALANCER="false"
 
 # Firestore Database Name
+# Set to a database name (e.g., \"(default)\") to create/manage a Firestore database.
+# Leave as an empty string to skip Firestore database creation.
 export FIRESTORE_DATABASE_NAME="users"

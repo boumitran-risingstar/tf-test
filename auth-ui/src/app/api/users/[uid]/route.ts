@@ -22,6 +22,10 @@ export async function GET(req: NextRequest, { params }: { params: { uid: string 
         throw new Error("NEXT_PUBLIC_USERS_API_URL is not defined");
     }
 
+    if (!serviceAccountKey) {
+        throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY is not defined");
+    }
+
     // Initialize Google Auth client with explicit credentials
     const auth = new GoogleAuth({
       credentials: JSON.parse(Buffer.from(serviceAccountKey, 'base64').toString('utf-8')),

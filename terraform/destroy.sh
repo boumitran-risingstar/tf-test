@@ -8,24 +8,14 @@ source "./config.sh"
 echo "--- Destroying Infrastructure ---"
 echo "Creating terraform.tfvars file..."
 # Create a terraform.tfvars file
-cat > ./terraform.tfvars << EOL
-project_id          = "${PROJECT_ID}"
-region              = "${GCP_REGION}"
-domain_name         = "${DOMAIN_NAME}"
-app_name            = "${APP_NAME}"
-service_name        = "${AUTH_UI_SERVICE_NAME}"
-users_api_service_name = "${USERS_API_SERVICE_NAME}"
-deploy_user_email   = "${DEPLOY_USER_EMAIL}"
-use_load_balancer   = ${USE_LOAD_BALANCER}
-firestore_database_name = "${FIRESTORE_DATABASE_NAME}"
-EOL
+source ./create-tfvars.sh
 
 echo "Initializing Terraform..."
 terraform init
 
 # Remove Cloud Run Domain Mapping from state if it exists and load balancer is NOT used, to retain it
 if [ "$USE_LOAD_BALANCER" = "false" ]; then
-  if terraform state list | grep -q 'google_cloud_run_domain_mapping.default[0]'; then
+  if terraform state list | grep -q 'google_cloud_run_domain_mapping.default\[0\]'; then
     echo "Removing google_cloud_run_domain_mapping.default[0] from Terraform state to retain it (Load Balancer not used)..."
     terraform state rm google_cloud_run_domain_mapping.default[0]
   else
@@ -36,7 +26,9 @@ else
 fi
 
 echo "Destroying all remaining infrastructure..."
-terraform destroy -auto-approve
+terraform destroy -auto-approve \
+  -var="firestore_database_name=${FIRESTORE_DATABASE_NAME}" \
+  -var="kms_project_id=${KMS_PROJECT_ID}"
 
 echo "Cleaning up local Terraform files..."
 rm -f terraform.tfvars

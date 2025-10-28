@@ -30,7 +30,8 @@ resource "google_project_service" "project" {
     "compute.googleapis.com",
     "secretmanager.googleapis.com",
     "firebase.googleapis.com",
-    "cloudkms.googleapis.com" # Added Cloud KMS API
+    "cloudkms.googleapis.com",
+    "firestore.googleapis.com"
   ])
   service = each.key
 }
@@ -130,7 +131,7 @@ resource "google_project_iam_member" "firebase_admin_role" {
 
 
 ####################################################################################
-# Artifact Registry & Build Log Bucket
+# Artifact Registry
 ####################################################################################
 
 resource "google_artifact_registry_repository" "default" {
@@ -141,34 +142,6 @@ resource "google_artifact_registry_repository" "default" {
   depends_on = [
     google_project_service.project
   ]
-}
-
-# --- Cloud Build Log Bucket ---
-resource "google_storage_bucket" "cloudbuild_logs" {
-  name          = "${var.project_id}-cloudbuild-logs"
-  location      = var.region
-  force_destroy = true # Optional: Allows deletion of the bucket even if it contains objects
-}
-
-# Grant the Cloud Build service account permission to write to the log bucket
-resource "google_storage_bucket_iam_member" "cloudbuild_log_writer" {
-  bucket = google_storage_bucket.cloudbuild_logs.name
-  role   = "roles/storage.admin"
-  member = "serviceAccount:${google_service_account.cloudbuild.email}"
-}
-
-# --- Cloud Build Source Bucket ---
-resource "google_storage_bucket" "cloudbuild_source" {
-  name          = "${var.project_id}-cloudbuild-source"
-  location      = var.region
-  force_destroy = true # Optional: Allows deletion of the bucket even if it contains objects
-}
-
-# Grant the Cloud Build service account permission to read and write to the source bucket
-resource "google_storage_bucket_iam_member" "cloudbuild_source_admin" {
-  bucket = google_storage_bucket.cloudbuild_source.name
-  role   = "roles/storage.objectAdmin"
-  member = "serviceAccount:${google_service_account.cloudbuild.email}"
 }
 
 
@@ -394,19 +367,20 @@ resource "google_iap_web_backend_service_iam_member" "default" {
 ####################################################################################
 
 resource "google_kms_key_ring" "firestore_key_ring" {
+  count    = var.kms_project_id != "" ? 1 : 0
   name     = "${var.app_name}-firestore-keyring"
   location = var.region
-  project  = var.kms_project_id # Using kms_project_id
+  project  = var.kms_project_id
   depends_on = [
     google_project_service.project["cloudkms.googleapis.com"]
   ]
 }
 
 resource "google_kms_crypto_key" "firestore_cmek_key" {
+  count           = var.kms_project_id != "" ? 1 : 0
   name            = "${var.app_name}-firestore-cmek-key"
-  key_ring        = google_kms_key_ring.firestore_key_ring.id
+  key_ring        = google_kms_key_ring.firestore_key_ring[0].id
   rotation_period = "100000s" # Example: 100 days
-  project         = var.kms_project_id # Using kms_project_id
 
   version_template {
     algorithm = "GOOGLE_SYMMETRIC_ENCRYPTION"
@@ -417,15 +391,20 @@ resource "google_kms_crypto_key" "firestore_cmek_key" {
   ]
 }
 
-# Grant the Firestore Service Agent the KMS CryptoKey Encrypter/Decrypter role
-resource "google_project_iam_member" "firestore_cmek_binding" {
-  project = var.kms_project_id # Binding applied in KMS project
-  role    = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member  = "serviceAccount:service-${
-    var.project_id}
-@gcp-sa-firestore.iam.gserviceaccount.com"
+resource "google_project_service_identity" "firestore_sa" {
+  provider = google-beta
+  project  = var.project_id
+  service  = "firestore.googleapis.com"
+
   depends_on = [
-    google_kms_crypto_key.firestore_cmek_key,
     google_project_service.project["firestore.googleapis.com"]
   ]
+}
+
+# Grant the Firestore Service Agent the KMS CryptoKey Encrypter/Decrypter role
+resource "google_kms_crypto_key_iam_member" "firestore_cmek_binding" {
+  count         = var.kms_project_id != "" ? 1 : 0
+  crypto_key_id = google_kms_crypto_key.firestore_cmek_key[0].id
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:${google_project_service_identity.firestore_sa.email}"
 }

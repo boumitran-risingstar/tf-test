@@ -47,7 +47,7 @@ variable "users_api_service_name" {
 }
 
 variable "firestore_database_name" {
-    description = "The name of the Firestore database"
+    description = "The name of the Firestore database. Leave as empty string in config.sh to skip creation."
     type        = string
 }
 
@@ -55,4 +55,9 @@ variable "deploy_timestamp" {
   description = "A timestamp to force a new revision to be created"
   type        = string
   default     = ""
+}
+
+variable "kms_project_id" {
+  description = "The Google Cloud project ID where KMS keys for Firestore CMEK are stored. Leave as empty string in config.sh to skip creation. Set to a different project ID if required by organization policy (constraints/gcp.restrictCmekCryptoKeyProjects)."
+  type        = string
 }
