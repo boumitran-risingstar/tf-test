@@ -38,28 +38,8 @@ npm run dev
 
 ## Infrastructure Management
 
-The backend infrastructure is defined in the `infra` directory using Terraform. The `deploy.sh` and `destroy.sh` scripts are provided to simplify the process of creating and destroying the infrastructure from your local development environment.
-
-### Creating the Infrastructure
-
-The `deploy.sh` script will provision all the necessary Google Cloud resources using Terraform.
-
-```bash
-./deploy.sh
-```
-
-This script reads configuration from `config.sh`, initializes Terraform, and applies the infrastructure plan.
-
-### Destroying the Infrastructure
-
-The `destroy.sh` script will tear down all the infrastructure created by Terraform. This is useful for cleaning up resources and avoiding unnecessary costs.
-
-```bash
-./destroy.sh
-```
-
-**Warning:** This command will permanently delete your deployed resources.
+The backend infrastructure is defined in the `infra` directory using Terraform. To deploy the infrastructure, run `terraform apply` inside the `infra` directory. To destroy the infrastructure, run `terraform destroy`.
 
 ## Automated Deployment
 
-In addition to manual deployment scripts, this project is configured for automated deployments using Google Cloud Build. Pushing to the main branch can be configured to trigger a build that deploys the latest version of the application.
+In addition to manual deployment, this project is configured for automated deployments using Google Cloud Build. Pushing to the main branch can be configured to trigger a build that deploys the latest version of the application.
