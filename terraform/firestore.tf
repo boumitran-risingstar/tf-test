@@ -15,7 +15,7 @@ resource "google_firestore_database" "database" {
   depends_on = [
     google_project_service.project,
     google_kms_crypto_key.firestore_cmek_key,
-    google_kms_crypto_key_iam_member.firestore_cmek_binding
+    #google_kms_crypto_key_iam_member.firestore_cmek_binding
   ]
 
   lifecycle {

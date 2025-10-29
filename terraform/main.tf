@@ -409,13 +409,13 @@ resource "time_sleep" "wait_for_kms_agent_initialization" {
   count = var.kms_project_id != "" ? 1 : 0
 }
 # Grant the Firestore Service Agent the KMS CryptoKey Encrypter/Decrypter role
-resource "google_kms_crypto_key_iam_member" "firestore_cmek_binding" {
-  count         = var.kms_project_id != "" ? 1 : 0
-  crypto_key_id = google_kms_crypto_key.firestore_cmek_key[0].id
-  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = "serviceAccount:${google_project_service_identity.firestore_sa.email}"
-  depends_on = [time_sleep.wait_for_kms_agent_initialization]
-}
+#resource "google_kms_crypto_key_iam_member" "firestore_cmek_binding" {
+#  count         = var.kms_project_id != "" ? 1 : 0
+#  crypto_key_id = google_kms_crypto_key.firestore_cmek_key[0].id
+#  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+#  member        = "serviceAccount:${google_project_service_identity.firestore_sa.email}"
+#  depends_on = [time_sleep.wait_for_kms_agent_initialization]
+#}
 
 # Grant the Secret KMS Agent the KMS CryptoKey Encrypter/Decrypter role
 resource "google_kms_crypto_key_iam_member" "secret_kms_agent_cmek_binding" {
