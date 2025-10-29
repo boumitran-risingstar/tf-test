@@ -189,14 +189,14 @@ resource "google_cloud_run_v2_service" "default" {
 }
 
 # Allow unauthenticated access to the Cloud Run service if not using the load balancer
-# resource "google_cloud_run_service_iam_member" "noauth" {
-#   count    = var.deploy_cloud_run && !var.use_load_balancer ? 1 : 0
-#   location = google_cloud_run_v2_service.default[0].location
-#   project  = google_cloud_run_v2_service.default[0].project
-#   service  = google_cloud_run_v2_service.default[0].name
-#   role     = "roles/run.invoker"
-#   member   = "allUsers"
-# }
+resource "google_cloud_run_service_iam_member" "noauth" {
+  count    = var.deploy_cloud_run && !var.use_load_balancer ? 1 : 0
+  location = google_cloud_run_v2_service.default[0].location
+  project  = google_cloud_run_v2_service.default[0].project
+  service  = google_cloud_run_v2_service.default[0].name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
 
 # --- Domain Mapping ---
 resource "google_cloud_run_domain_mapping" "default" {
