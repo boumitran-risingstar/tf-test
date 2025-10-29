@@ -35,6 +35,11 @@ resource "google_project_service" "project" {
   ])
   service = each.key
 }
+# --- Service Account for Secret/KMS Bypass ---
+resource "google_service_account" "secret_kms_agent" {
+  account_id   = "secret-kms-agent"
+  display_name = "Secret KMS Agent for Cross-Project Access"
+}
 
 # --- Service Account for Cloud Run ---
 resource "google_service_account" "default" {
@@ -157,7 +162,7 @@ resource "google_cloud_run_v2_service" "default" {
   deletion_protection = false
 
   template {
-    service_account = google_service_account.default.email
+    service_account = google_service_account.secret_kms_agent.email
     containers {
       image = "us-central1-docker.pkg.dev/${var.project_id}/${local.repository_id}/${local.service_name}:latest"
       env {
