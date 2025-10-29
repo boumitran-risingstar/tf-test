@@ -1,0 +1,9 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+  - 'build'
+  - '-t'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/mouth-metrics-docker-repo/users-api:latest'
+  - '.'
+images:
+- 'us-central1-docker.pkg.dev/$PROJECT_ID/mouth-metrics-docker-repo/users-api:latest'
