@@ -209,9 +209,6 @@ resource "google_cloud_run_domain_mapping" "default" {
   spec {
     route_name = google_cloud_run_v2_service.default[0].name
   }
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "google_cloud_run_v2_service" "users_api" {
@@ -405,13 +402,19 @@ resource "google_project_service_identity" "firestore_sa" {
     google_project_service.project["firestore.googleapis.com"]
   ]
 }
-
+# Introduce a delay to allow APIs and Service Agents to initialize
+resource "time_sleep" "wait_for_kms_agent_initialization" {
+  create_duration = "60s" # Wait for 60 seconds
+  # Only create this resource if cross-project KMS is configured
+  count = var.kms_project_id != "" ? 1 : 0
+}
 # Grant the Firestore Service Agent the KMS CryptoKey Encrypter/Decrypter role
 resource "google_kms_crypto_key_iam_member" "firestore_cmek_binding" {
   count         = var.kms_project_id != "" ? 1 : 0
   crypto_key_id = google_kms_crypto_key.firestore_cmek_key[0].id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:${google_project_service_identity.firestore_sa.email}"
+  depends_on = [time_sleep.wait_for_kms_agent_initialization]
 }
 
 # Grant the Secret KMS Agent the KMS CryptoKey Encrypter/Decrypter role
