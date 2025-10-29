@@ -8,12 +8,18 @@ resource "google_project_service" "secretmanager" {
 data "google_secret_manager_secret" "google_auth_client_id" {
   project   = var.project_id
   secret_id = "auth-ui-google-auth-client-id"
+  depends_on = [
+    google_project_service.secretmanager
+  ]
 }
 
 # Get a reference to the existing client secret secret
 data "google_secret_manager_secret" "google_auth_client_secret" {
   project   = var.project_id
   secret_id = "auth-ui-google-auth-client-secret"
+  depends_on = [
+    google_project_service.secretmanager
+  ]
 }
 
 # Grant the Cloud Build service account access to the client ID secret
