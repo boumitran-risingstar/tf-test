@@ -189,14 +189,14 @@ resource "google_cloud_run_v2_service" "default" {
 }
 
 # Allow unauthenticated access to the Cloud Run service if not using the load balancer
-resource "google_cloud_run_service_iam_member" "noauth" {
-  count    = var.deploy_cloud_run && !var.use_load_balancer ? 1 : 0
-  location = google_cloud_run_v2_service.default[0].location
-  project  = google_cloud_run_v2_service.default[0].project
-  service  = google_cloud_run_v2_service.default[0].name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
+# resource "google_cloud_run_service_iam_member" "noauth" {
+#   count    = var.deploy_cloud_run && !var.use_load_balancer ? 1 : 0
+#   location = google_cloud_run_v2_service.default[0].location
+#   project  = google_cloud_run_v2_service.default[0].project
+#   service  = google_cloud_run_v2_service.default[0].name
+#   role     = "roles/run.invoker"
+#   member   = "allUsers"
+# }
 
 # --- Domain Mapping ---
 resource "google_cloud_run_domain_mapping" "default" {
@@ -412,4 +412,12 @@ resource "google_kms_crypto_key_iam_member" "firestore_cmek_binding" {
   crypto_key_id = google_kms_crypto_key.firestore_cmek_key[0].id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:${google_project_service_identity.firestore_sa.email}"
+}
+
+# Grant the Secret KMS Agent the KMS CryptoKey Encrypter/Decrypter role
+resource "google_kms_crypto_key_iam_member" "secret_kms_agent_cmek_binding" {
+  count         = var.kms_project_id != "" ? 1 : 0
+  crypto_key_id = google_kms_crypto_key.firestore_cmek_key[0].id
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:${google_service_account.secret_kms_agent.email}"
 }
