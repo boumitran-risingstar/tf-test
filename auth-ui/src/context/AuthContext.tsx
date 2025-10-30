@@ -7,6 +7,7 @@ interface User {
   email?: string;
   name?: string;
   picture?: string;
+  email_verified?: boolean;
 }
 
 interface AuthContextType {
@@ -15,6 +16,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
+  sendVerificationEmail: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -91,9 +93,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Immediately clear the user state on the client
     setUser(null);
   };
+  
+  const sendVerificationEmail = async () => {
+    const res = await fetch('/api/auth/send-verification-email', {
+      method: 'POST',
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || 'Failed to send verification email');
+    }
+  };
+
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, signup }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, signup, sendVerificationEmail }}>
       {children}
     </AuthContext.Provider>
   );
