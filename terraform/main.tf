@@ -205,6 +205,15 @@ resource "google_cloud_run_v2_service" "default" {
         }
       }
       env {
+        name = "FIREBASE_PROJECT_ID"
+        value_source {
+          secret_key_ref {
+            secret = google_secret_manager_secret.firebase_project_id.secret_id
+            version = "latest"
+          }
+        }
+      }
+      env {
         name = "NEXT_PUBLIC_FIREBASE_PROJECT_ID"
         value_source {
           secret_key_ref {
