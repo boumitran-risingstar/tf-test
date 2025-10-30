@@ -77,7 +77,8 @@ resource "google_service_account_iam_member" "users_api_service_account_user" {
 resource "google_project_iam_member" "cloud_build_permissions" {
   for_each = toset([
     "roles/run.admin",
-    "roles/artifactregistry.writer"
+    "roles/artifactregistry.writer",
+    "roles/secretmanager.secretAccessor"
   ])
   project = var.project_id
   role    = each.key
@@ -134,6 +135,27 @@ resource "google_project_iam_member" "firebase_admin_role" {
   member  = "serviceAccount:${google_service_account.default.email}"
 }
 
+resource "google_secret_manager_secret" "firebase_project_id" {
+  secret_id = "firebase-project-id"
+  replication {
+    user_managed {
+      replicas {
+        location = var.region
+      }
+    }
+  }
+}
+
+resource "google_secret_manager_secret_version" "firebase_project_id_version" {
+  secret      = google_secret_manager_secret.firebase_project_id.id
+  secret_data = var.project_id
+}
+
+resource "google_secret_manager_secret_iam_member" "firebase_project_id_accessor" {
+  secret_id = google_secret_manager_secret.firebase_project_id.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.default.email}"
+}
 
 ####################################################################################
 # Artifact Registry
@@ -162,7 +184,7 @@ resource "google_cloud_run_v2_service" "default" {
   deletion_protection = false
 
   template {
-    service_account = google_service_account.secret_kms_agent.email
+    service_account = google_service_account.default.email
     containers {
       image = "us-central1-docker.pkg.dev/${var.project_id}/${local.repository_id}/${local.service_name}:latest"
       env {
@@ -174,8 +196,22 @@ resource "google_cloud_run_v2_service" "default" {
         value = var.deploy_timestamp
       }
       env {
-        name  = "FIREBASE_SERVICE_ACCOUNT_KEY"
-        value = google_secret_manager_secret_version.firebase_service_account_key_version.secret_data
+        name = "FIREBASE_SERVICE_ACCOUNT_KEY"
+        value_source {
+          secret_key_ref {
+            secret = google_secret_manager_secret.firebase_service_account_key.secret_id
+            version = "latest"
+          }
+        }
+      }
+      env {
+        name = "NEXT_PUBLIC_FIREBASE_PROJECT_ID"
+        value_source {
+          secret_key_ref {
+            secret = google_secret_manager_secret.firebase_project_id.secret_id
+            version = "latest"
+          }
+        }
       }
     }
     # Use a Serverless NEG for the load balancer integration or allow all traffic
@@ -355,7 +391,7 @@ resource "google_compute_global_forwarding_rule" "http" {
 ####################################################################################
 
 # Note: IAP requires an OAuth consent screen to be configured for the project.
-# This resource binds the IAP role to the backend service.
+# This resource binds the IAP role to the. Binds the IAP role to the backend service.
 resource "google_iap_web_backend_service_iam_member" "default" {
   count                = var.use_load_balancer ? 1 : 0
   project              = var.project_id

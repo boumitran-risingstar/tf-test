@@ -3,9 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/card";
 import { Briefcase, ClipboardList, BarChart3, PenSquare } from "lucide-react";
 import Link from "next/link";
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
-import { auth } from "@/firebase/config";
-import { useRouter } from 'next/navigation';
+import { useAuth } from "@/context/AuthContext";
 import { Loader } from "@/components/loader";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
@@ -19,20 +17,7 @@ const AnimatedSection = ({ children }: { children: React.ReactNode }) => {
 };
 
 export default function HomePageClient() {
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(user => {
-      if (user) {
-        router.push('/dashboard');
-      } else {
-        setLoading(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [router]);
+  const { loading } = useAuth();
 
   return (
     <div className="bg-background text-foreground">

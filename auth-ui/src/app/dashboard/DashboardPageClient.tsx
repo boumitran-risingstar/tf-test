@@ -1,83 +1,25 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/button';
-import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function DashboardPageClient() {
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUser(user);
-        syncUser(user); // Call syncUser when user is authenticated
-      } else {
-        window.location.href = '/login';
-      }
-    });
-
-    return () => unsubscribe();
-  }, [router]);
-
-  const syncUser = async (user: User) => {
-    try {
-      const idToken = await user.getIdToken();
-      const res = await fetch(`/api/users/${user.uid}`, {
-        headers: {
-          'Authorization': `Bearer ${idToken}`,
-        },
-      });
-
-      if (res.status === 404) {
-        // User not found, so create them
-        const createRes = await fetch('/api/users', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${idToken}`,
-          },
-          body: JSON.stringify({
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-          }),
-        });
-
-        if (createRes.ok) {
-          const newUser = await createRes.json();
-          console.log('Created user:', newUser);
-        } else {
-          const errorData = await createRes.json();
-          const message = errorData.message || createRes.statusText;
-          toast.error(`Failed to create user: ${message}`);
-        }
-      } else if (res.ok) {
-        const userData = await res.json();
-        console.log('User data:', userData);
-      } else {
-        const errorData = await res.json();
-        const message = errorData.message || res.statusText;
-        toast.error(`Failed to retrieve user data: ${message}`);
-      }
-    } catch (error) {
-      console.error('Failed to sync user', error);
-      toast.error('Failed to sync user');
+    if (!loading && !user) {
+      router.push('/login');
     }
-  };
-
+  }, [user, loading, router]);
 
   const handleLogout = async () => {
-    if (auth.currentUser) {
-        await auth.signOut();
-    }
-    window.location.href = '/login';
+    await logout();
+    router.push('/login');
   };
 
-  if (!user) {
+  if (loading || !user) {
     return <div>Loading...</div>;
   }
 

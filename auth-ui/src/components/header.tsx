@@ -1,38 +1,37 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { auth } from '@/lib/firebase';
-import { signOut, User } from 'firebase/auth';
+import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext'; // Import the new hook
 import { Loader } from '@/components/loader';
 
+// A simplified user type for the client-side
+interface User {
+  uid: string;
+  email?: string;
+  name?: string;
+  picture?: string;
+}
+
 export function Header() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, logout } = useAuth(); // Use the new auth context
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setUser(user);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
   const handleLogout = async () => {
-    await signOut(auth);
+    await logout();
     setDropdownOpen(false);
-    router.push('/login');
+    router.push('/login'); // Redirect to login after logout
   };
 
   const hideGetStarted = pathname === '/login' || pathname === '/signup';
 
   const getInitials = (user: User) => {
-    if (user.displayName) {
-      return user.displayName.charAt(0).toUpperCase();
+    // Use name or email from the new user object
+    if (user.name) {
+      return user.name.charAt(0).toUpperCase();
     }
     if (user.email) {
       return user.email.charAt(0).toUpperCase();

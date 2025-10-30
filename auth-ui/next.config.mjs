@@ -1,43 +1,22 @@
 
-import withPWA from '@ducanh2912/next-pwa';
-
+/** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  async rewrites() {
+    const firebaseProject = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    if (!firebaseProject) {
+      // This warning will be visible during the build process if the variable is not set.
+      console.warn('WARNING: NEXT_PUBLIC_FIREBASE_PROJECT_ID is not set. Firebase auth rewrites will not be configured.');
+      return [];
+    }
+    return [
+      {
+        source: '/__/auth/:path*',
+        // The destination is the Firebase project's universal auth backend.
+        // This is NOT your custom domain, which would cause an infinite loop.
+        destination: `https://${firebaseProject}.firebaseapp.com/__/auth/:path*`,
+      },
+    ];
+  },
 };
 
-const pwaConfig = withPWA({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development',
-  fallbacks: {
-    document: '/~offline',
-  },
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
-  cacheStartUrl: true,
-  dynamicStartUrl: true,
-  workboxOptions: {
-    // Exclude specific routes from caching
-    exclude: ['/api/auth/.*\, '/api/users/.*\],  
-  },
-  // Add screenshots for a better PWA experience
-  screenshots: [
-    {
-      src: '/screenshots/signup-desktop.png',
-      sizes: '1280x720',
-      type: 'image/png',
-      form_factor: 'wide',
-      label: 'Auth UI Signup',
-    },
-    {
-      src: '/screenshots/signup-mobile.png',
-      sizes: '720x1280',
-      type: 'image/png',
-      form_factor: 'narrow',
-      label: 'Auth UI Signup',
-    },
-  ],
-});
-
-export default pwaConfig(nextConfig);
+export default nextConfig;

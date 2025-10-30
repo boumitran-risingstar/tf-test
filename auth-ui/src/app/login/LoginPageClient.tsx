@@ -3,60 +3,31 @@ import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { Label } from "@/components/label";
 import Link from "next/link";
-import { useState } from 'react';
-import { signInWithEmailAndPassword, sendEmailVerification, User } from "firebase/auth";
-import { auth } from "@/firebase/config";
+import { useState, FormEvent } from 'react';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPageClient() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [unverifiedUser, setUnverifiedUser] = useState<User | null>(null);
   const router = useRouter();
+  const { login } = useAuth();
 
-  const handleResendVerification = async () => {
-    if (unverifiedUser) {
-      try {
-        await sendEmailVerification(unverifiedUser);
-        toast.success('Verification email sent! Please check your inbox.');
-      } catch (error) {
-        toast.error('Failed to send verification email. Please try again.');
-      }
-    }
-  };
-
-  const handleLogin = async () => {
+  const handleLogin = async (e: FormEvent) => {
+    e.preventDefault();
     if (!email || !password) {
       toast.error("Please enter both email and password.");
       return;
     }
-    setUnverifiedUser(null);
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      if (userCredential.user.emailVerified) {
-        router.push('/dashboard');
-      } else {
-        setUnverifiedUser(userCredential.user);
-        toast.error('Please verify your email before logging in.');
-      }
+      await login(email, password);
+      router.push('/dashboard');
     } catch (error: any) {
-      switch (error.code) {
-        case 'auth/user-not-found':
-          toast.error('No user found with this email.');
-          break;
-        case 'auth/wrong-password':
-          toast.error('Incorrect password. Please try again.');
-          break;
-        case 'auth/invalid-email':
-          toast.error('Please enter a valid email address.');
-          break;
-        default:
-          toast.error('An unknown error occurred. Please try again.');
-          break;
-      }
+      // Display the error message from our server API
+      toast.error(error.message || 'Failed to log in. Please try again.');
     }
   };
 
@@ -79,7 +50,7 @@ export default function LoginPageClient() {
               Enter your email below to login to your account
             </p>
           </div>
-          <div className="grid gap-4">
+          <form onSubmit={handleLogin} className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -109,15 +80,10 @@ export default function LoginPageClient() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            <Button type="submit" className="w-full" onClick={handleLogin}>
+            <Button type="submit" className="w-full">
               Login
             </Button>
-            {unverifiedUser && (
-              <Button variant="outline" className="w-full" onClick={handleResendVerification}>
-                Resend Verification Email
-              </Button>
-            )}
-          </div>
+          </form>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}
             <Link href="/signup" className="underline">

@@ -3,8 +3,6 @@ import { useState } from "react";
 import { Button } from "@/components/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/card";
 import Link from "next/link";
-import { auth } from "@/firebase/config";
-import { sendPasswordResetEmail } from "firebase/auth";
 
 export default function ForgotPasswordPageClient() {
   const [email, setEmail] = useState("");
@@ -16,10 +14,22 @@ export default function ForgotPasswordPageClient() {
     setError(null);
     setSuccess(false);
     try {
-      await sendPasswordResetEmail(auth, email);
-      setSuccess(true);
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (res.ok) {
+        setSuccess(true);
+      } else {
+        const data = await res.json();
+        setError(data.message || 'Failed to send password reset email.');
+      }
     } catch (error: any) {
-      setError(error.message);
+      setError('An unexpected error occurred.');
     }
   };
 

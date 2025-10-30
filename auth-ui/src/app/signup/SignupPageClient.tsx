@@ -4,8 +4,7 @@ import { Input } from "@/components/input";
 import { Label } from "@/components/label";
 import Link from "next/link";
 import { useState } from 'react';
-import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
-import { auth } from "@/firebase/config"; 
+import { useAuth } from "@/context/AuthContext";
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -13,6 +12,7 @@ import Image from 'next/image';
 export default function SignupPageClient() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const { signup } = useAuth();
   const router = useRouter();
 
   const handleSignup = async () => {
@@ -22,25 +22,12 @@ export default function SignupPageClient() {
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await sendEmailVerification(userCredential.user);
-      toast.success('Sign up successful! Please check your email to verify your account.');
+      await signup(email, password);
+      toast.success('Sign up successful! Please log in to continue.');
       router.push('/login');
     } catch (error: any) {
-      switch (error.code) {
-        case 'auth/email-already-in-use':
-          toast.error('This email is already in use.');
-          break;
-        case 'auth/invalid-email':
-          toast.error('Please enter a valid email address.');
-          break;
-        case 'auth/weak-password':
-          toast.error('The password is too weak. Please choose a stronger password.');
-          break;
-        default:
-          toast.error('An unknown error occurred. Please try again.');
-          break;
-      }
+      // Display the error message from our server API
+      toast.error(error.message || 'Failed to sign up. Please try again.');
     }
   };
 
