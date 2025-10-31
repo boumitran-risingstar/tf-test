@@ -4,13 +4,13 @@
 # This file is the single source of truth for all configuration variables.
 
 # GCP Project ID
-export PROJECT_ID="mouth-metrics-476603"
+export PROJECT_ID="mouth-metrics-v2"
 
 # --- Customer-Managed Encryption Keys (CMEK) for Firestore ---
 # IMPORTANT: If your organization enforces the 'constraints/gcp.restrictCmekCryptoKeyProjects'
 # policy, KMS_PROJECT_ID MUST be a different project ID from PROJECT_ID.
 # Leave as an empty string to disable CMEK and use Google-managed keys.
-export KMS_PROJECT_ID="" #mouth-metrics-kms"
+export KMS_PROJECT_ID="" # mouth-metrics-kms
 
 # Deploy User Email
 export DEPLOY_USER_EMAIL="boumitran@32studio.org"
