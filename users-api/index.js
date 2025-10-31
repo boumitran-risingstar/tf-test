@@ -9,7 +9,6 @@ const authMiddleware = require('./auth-middleware');
 
 const app = express();
 const firestore = new Firestore({ databaseId: 'users' });
-const port = process.env.PORT || 8080;
 
 app.use((req, res, next) => {
   console.log(`Incoming request: ${req.method} ${req.url}`);
@@ -198,6 +197,7 @@ app.get('/api/users/slug/:slugURL', async (req, res) => {
 
 // Start the server only if this file is run directly
 if (require.main === module) {
+  const port = process.env.PORT || 8080; // Default to 8080 if no port is specified
   app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
   });

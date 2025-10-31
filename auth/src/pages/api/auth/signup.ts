@@ -8,9 +8,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).end();
   }
 
-  const { email, pass } = req.body;
+  const { email, password } = req.body;
 
-  if (!email || !pass) {
+  if (!email || !password) {
     return res.status(400).json({ message: 'Email and password are required.' });
   }
 
@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Use the Firebase Admin SDK to create a new user.
     const userRecord = await auth.createUser({
       email: email,
-      password: pass,
+      password: password,
     });
 
     // Send back a success response.

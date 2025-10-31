@@ -1,4 +1,3 @@
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
@@ -17,8 +16,13 @@ const nextConfig = {
     }
 
     rewrites.push({
-        source: '/api/:path*',
-        destination: 'http://localhost:8081/api/:path*',
+        source: '/api/users/:path*',
+        destination: 'http://localhost:8080/api/users/:path*',
+    });
+
+    rewrites.push({
+        source: '/api/auth/:path*',
+        destination: 'http://localhost:3001/api/auth/:path*',
     });
 
     return rewrites;
