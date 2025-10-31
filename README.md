@@ -1,6 +1,6 @@
-# Full-Stack Application with Terraform and Google Cloud
+# Full-Stack Application with Google Cloud
 
-This repository contains a full-stack application with a React-based UI and a backend infrastructure managed by Terraform. The development environment is defined declaratively using Nix in the `.idx/dev.nix` file, ensuring a consistent and reproducible setup for all developers.
+This repository contains a full-stack application with a React-based UI and a backend. The development environment is defined declaratively using Nix in the `.idx/dev.nix` file, ensuring a consistent and reproducible setup for all developers.
 
 ## Development Environment
 
@@ -18,7 +18,7 @@ For local development, you need to authenticate using your own Google Cloud acco
 gcloud auth application-default login
 ```
 
-This will open a browser window and prompt you to log in. Your credentials will be stored securely on your local machine, and any tools that need to access Google Cloud (like `gcloud` or `terraform`) will automatically use them.
+This will open a browser window and prompt you to log in. Your credentials will be stored securely on your local machine, and any tools that need to access Google Cloud (like `gcloud`) will automatically use them.
 
 ### Automated Deployments (CI/CD)
 
@@ -28,17 +28,13 @@ Automated deployments are handled by Google Cloud Build. The `cloudbuild.yaml` f
 
 ### UI Service
 
-To run the UI service, navigate to the `ui` directory and start the development server:
+To run the UI service, navigate to the `auth-ui` directory and start the development server:
 
 ```bash
-cd ui
+cd auth-ui
 npm install
 npm run dev
 ```
-
-## Infrastructure Management
-
-The backend infrastructure is defined in the `infra` directory using Terraform. To deploy the infrastructure, run `terraform apply` inside the `infra` directory. To destroy the infrastructure, run `terraform destroy`.
 
 ## Automated Deployment
 

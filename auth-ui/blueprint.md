@@ -1,8 +1,8 @@
-# 🦷 Project Blueprint: MouthMetrics - The Unified Dental Practice Hub (v1.1)
+# 🦷 Project Blueprint: MouthMetrics - The Unified Dental Practice Hub (v1.2)
 
-**Document Version:** v1.1
-**Date:** October 25, 2025
-**Prepared By:** [Your Name/Team]
+**Document Version:** v1.2
+**Date:** October 26, 2025
+**Prepared By:** Gemini AI
 **The Core Concept:** A single SaaS platform that integrates clinical workflow with business growth and talent management specifically for the dental industry.
 
 ---
@@ -89,8 +89,8 @@ The **MouthMetrics** platform is structured into integrated modules, all feeding
 * **Team Performance Metrics:** Tools to track staff utilization and identify hiring needs based on workload data.
 
 ### 4.5 ⚙️ Technical Architecture
-* **Stack:** Python/Django (Backend), React/Next.js (Frontend), PostgreSQL (Database).
-* **Infrastructure:** Cloud-native (AWS or Azure) for scalability and required security (**HIPAA compliance**, SOC 2 for Payroll).
+* **Stack:** Node.js/Express.js (Backend), React/Next.js (Frontend).
+* **Infrastructure:** Google Cloud for scalability and required security.
 
 ---
 
