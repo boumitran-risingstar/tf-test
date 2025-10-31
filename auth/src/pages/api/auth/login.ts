@@ -34,6 +34,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       throw new Error(restApiData.error.message || 'Authentication failed.');
     }
 
+    const user = await auth.getUser(restApiData.localId);
+
+    if (!user.emailVerified) {
+      return res.status(401).json({ message: 'Please verify your email before logging in.' });
+    }
+
     // Exchange the ID token for a session cookie.
     const idToken = restApiData.idToken;
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days

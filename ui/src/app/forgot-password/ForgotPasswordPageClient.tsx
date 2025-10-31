@@ -1,68 +1,72 @@
 'use client';
-import { useState } from "react";
 import { Button } from "@/components/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/card";
+import { Input } from "@/components/input";
+import { Label } from "@/components/label";
 import Link from "next/link";
+import { useState, FormEvent } from 'react';
+import toast from 'react-hot-toast';
+import Image from 'next/image';
 
 export default function ForgotPasswordPageClient() {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [email, setEmail] = useState('');
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(false);
+    if (!email) {
+      toast.error("Please enter your email address.");
+      return;
+    }
+
     try {
-      const res = await fetch('/api/auth/forgot-password', {
+      const response = await fetch('/api/auth/forgot-password', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
 
-      if (res.ok) {
-        setSuccess(true);
-      } else {
-        const data = await res.json();
-        setError(data.message || 'Failed to send password reset email.');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send password reset email.');
       }
+
+      toast.success("A password reset link has been sent to your email.");
     } catch (error: any) {
-      setError('An unexpected error occurred.');
+      toast.error(error.message);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-muted">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Forgot Password</CardTitle>
-          <CardDescription>Enter your email to reset your password.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {success ? (
-            <p className="text-green-500">A password reset email has been sent to your email address.</p>
-          ) : (
-            <form onSubmit={handleResetPassword} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">Email</label>
-                <input id="email" type="email" placeholder="m@example.com" required className="w-full px-3 py-2 border rounded-md" value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              <Button type="submit" className="w-full">Reset Password</Button>
-            </form>
-          )}
-        </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-muted-foreground">
-            Remember your password?{" "}
-            <Link href="/login" className="font-semibold text-primary">
-              Sign In
-            </Link>
-          </p>
-        </CardFooter>
-      </Card>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md dark:bg-gray-800">
+        <div className="flex justify-center">
+            <Image
+                src="/hero.svg"
+                alt="Your Company Logo"
+                width={150} 
+                height={150}
+            />
+        </div>
+        <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white">Forgot Your Password?</h2>
+        <p className="text-center text-gray-600 dark:text-gray-300">No worries, we'll send you a reset link.</p>
+        <form className="space-y-6" onSubmit={handleForgotPassword}>
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <Button type="submit" className="w-full">Send Reset Link</Button>
+        </form>
+        <p className="text-sm text-center text-gray-600 dark:text-gray-300">
+          Remember your password? <Link href="/login"><span className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">Log in</span></Link>
+        </p>
+      </div>
     </div>
   );
 }

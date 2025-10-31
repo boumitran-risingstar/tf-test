@@ -19,12 +19,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const userRecord = await auth.createUser({
       email: email,
       password: password,
+      emailVerified: false, // Explicitly set emailVerified to false
     });
+
+    // Generate the email verification link.
+    const verificationLink = await auth.generateEmailVerificationLink(email);
+
+    // TODO: Send the verification link to the user's email address.
+    // You can use a library like Nodemailer or an email service like SendGrid to send the email.
+    // For example (using a placeholder function):
+    // await sendVerificationEmail(email, verificationLink);
+    console.log(`Verification link for ${email}: ${verificationLink}`); // Log for debugging
+
 
     // Send back a success response.
     // We don't automatically log the user in for security reasons.
     // The client will redirect to the login page.
-    res.status(201).json({ uid: userRecord.uid });
+    res.status(201).json({ uid: userRecord.uid, message: 'Signup successful. Please check your email to verify your account.' });
   } catch (error: any) {
     // Handle potential errors, like the email already being in use.
     console.error('Error creating user:', error);
