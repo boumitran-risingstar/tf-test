@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mouthmetrics.32studio.org/sitemap.xml

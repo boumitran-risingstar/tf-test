@@ -6,11 +6,6 @@ if (!admin.apps.length) {
     throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.');
   }
 
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  if (!projectId) {
-    throw new Error('FIREBASE_PROJECT_ID environment variable is not set.');
-  }
-
   let parsedServiceAccount;
   try {
     // Try parsing as base64 encoded json
@@ -22,6 +17,11 @@ if (!admin.apps.length) {
     } catch (e2) {
       throw new Error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY. Make sure it is a valid JSON or a base64 encoded JSON.');
     }
+  }
+
+  const projectId = parsedServiceAccount.project_id;
+  if (!projectId) {
+    throw new Error('Failed to get project_id from FIREBASE_SERVICE_ACCOUNT_KEY.');
   }
 
   admin.initializeApp({
