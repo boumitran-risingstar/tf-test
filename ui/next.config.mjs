@@ -1,7 +1,12 @@
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
     const firebaseProject = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    // Default to localhost for development, but allow overriding for other environments.
+    const authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
+    const usersApiUrl = process.env.USERS_API_URL || 'http://localhost:8080';
+
     const rewrites = [];
     if (!firebaseProject) {
       // This warning will be visible during the build process if the variable is not set.
@@ -17,12 +22,12 @@ const nextConfig = {
 
     rewrites.push({
         source: '/api/users/:path*',
-        destination: 'http://localhost:8080/api/users/:path*',
+        destination: `${usersApiUrl}/api/users/:path*`,
     });
 
     rewrites.push({
         source: '/api/auth/:path*',
-        destination: 'http://localhost:3001/api/auth/:path*',
+        destination: `${authServiceUrl}/api/auth/:path*`,
     });
 
     return rewrites;

@@ -81,6 +81,12 @@ export default function SignupPageClient() {
             <Link href="/login" className="underline">
               Sign in
             </Link>
+            {' '}
+            or
+            {' '}
+            <Link href="/phone-signin" className="underline">
+              Sign in with phone
+            </Link>
           </div>
         </div>
       </div>

@@ -1,34 +1,34 @@
-      'use client';
-      import { Button } from "@/components/button";
-      import { Input } from "@/components/input";
-      import { Label } from "@/components/label";
-      import Link from "next/link";
-      import { useState, FormEvent } from 'react';
-      import toast from 'react-hot-toast';
-      import { useRouter } from 'next/navigation';
-      import Image from 'next/image';
-      import { useAuth } from '@/context/AuthContext';
-      
-      export default function LoginPageClient() {
-        const [email, setEmail] = useState('');
-        const [password, setPassword] = useState('');
-        const router = useRouter();
-        const { login } = useAuth();
-      
-        const handleLogin = async (e: FormEvent) => {
-          e.preventDefault();
-          if (!email || !password) {
-            toast.error("Please enter both email and password.");
-            return;
-          }
-      
-          try {
-            await login(email, password);
-            router.push('/dashboard');
-          } catch (error: any) {
-            toast.error(error.message || 'Failed to log in. Please try again.');
-          }
-        };
+'use client';
+import { Button } from "@/components/button";
+import { Input } from "@/components/input";
+import { Label } from "@/components/label";
+import Link from "next/link";
+import { useState, FormEvent } from 'react';
+import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { useAuth } from '@/context/AuthContext';
+
+export default function LoginPageClient() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const router = useRouter();
+  const { login } = useAuth();
+
+  const handleLogin = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error("Please enter both email and password.");
+      return;
+    }
+
+    try {
+      await login(email, password);
+      router.push('/dashboard');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to log in. Please try again.');
+    }
+  };
 
 
   return (
@@ -73,6 +73,11 @@
             <div className="text-sm">
               <Link href="/forgot-password">
                 <span className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">Forgot your password?</span>
+              </Link>
+            </div>
+            <div className="text-sm">
+              <Link href="/phone-signin">
+                <span className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">Sign in with phone</span>
               </Link>
             </div>
           </div>
