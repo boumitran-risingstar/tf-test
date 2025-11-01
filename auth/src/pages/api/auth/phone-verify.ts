@@ -1,6 +1,7 @@
 import { getAuth } from 'firebase-admin/auth';
 import { app, appCheck } from '@/firebase/admin'; // Consolidated to modern, modular admin app
 import { NextApiRequest, NextApiResponse } from 'next';
+import { setSession } from '@/lib/session';
 
 const PHONE_VERIFY_CODE_API_URL =
   'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPhoneNumber';
@@ -65,17 +66,7 @@ export default async function handler(
       expiresIn,
     });
 
-    const options = {
-      maxAge: expiresIn / 1000,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-    };
-
-    res.setHeader(
-      'Set-Cookie',
-      `session=${sessionCookie}; Max-Age=${options.maxAge}; Path=${options.path}; HttpOnly; ${options.secure ? 'Secure' : ''}`
-    );
+    setSession(res, sessionCookie);
     res.status(200).json({ status: 'success' });
   } catch (error: any) {
     console.error('Error in phone-verify:', error);
