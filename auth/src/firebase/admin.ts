@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin';
+import { getAppCheck } from 'firebase-admin/app-check';
 
 if (!admin.apps.length) {
   const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
@@ -31,3 +32,4 @@ if (!admin.apps.length) {
 }
 
 export const auth = admin.auth();
+export const appCheck = getAppCheck();

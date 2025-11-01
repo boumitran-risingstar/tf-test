@@ -1,6 +1,6 @@
 
 import { NextApiRequest, NextApiResponse } from 'next';
-import { auth } from '@/firebase/admin';
+import { auth, appCheck } from '@/firebase/admin';
 import { setSession } from '@/lib/session';
 
 // Securely sign in with password and exchange for a session cookie.
@@ -15,13 +15,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    // Mint an App Check token.
+    const appCheckToken = await appCheck.createToken(process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '');
+
     // Use the Firebase REST API to verify the password.
     const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
     const restApiUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`;
 
     const restApiRes = await fetch(restApiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Firebase-AppCheck': appCheckToken.token,
+      },
       body: JSON.stringify({
         email,
         password,
